@@ -2086,7 +2086,7 @@ function openGVModal(editId){
     if(g.foto_url)loadExistingPhoto('gv',g.foto_url,g.foto_path||null);
   }else{
     document.getElementById('gv-imp').value='';document.getElementById('gv-desc').value='';
-    document.getElementById('gv-nota').value='';document.getElementById('gv-fecha').value=todayISO();
+    document.getElementById('gv-fecha').value=todayISO();
     document.getElementById('gv-quien').value=currentUser?.id||pax[0];selCatV='comidas';
   }
   highlightCat('gv-cat',selCatV,'v');openModal('modal-gv');
