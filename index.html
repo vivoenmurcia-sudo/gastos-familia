@@ -478,7 +478,6 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
           </div>
           <div class="hero-progress-bar"><div class="hero-progress-fill" id="hero-prog-fill"></div></div>
         </div>
-        <div class="hero-persons" id="hero-persons"></div>
         <select class="year-select" id="year-select" onchange="onYearChange(this.value)"></select>
         <div class="month-pills-outer"><div class="month-pills-wrap" id="month-pills"></div></div>
       </div>
@@ -1224,13 +1223,8 @@ function updateHero(){
     progEl.style.display='block';
   }else{progEl.style.display='none';}
 
-  // Totales por persona
-  const personsEl=document.getElementById('hero-persons');
-  const personTotals=FAMILY.map(f=>({...f,total:entries.filter(g=>g.quien===f.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(f=>f.total>0).sort((a,b)=>b.total-a.total);
-  personsEl.innerHTML=personTotals.map(f=>`<div class="hero-person"><div class="hero-person-av ${f.avClass}">${f.letter}</div><span>${f.name}: ${fmtEur(f.total)}</span></div>`).join('');
-
   // Person filter pills
-  buildPersonFilters(personTotals);
+  buildPersonFilters(FAMILY.map(f=>({...f,total:Object.values(hogarData).filter(g=>g.quien===f.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(f=>f.total>0).sort((a,b)=>b.total-a.total));
 }
 
 // ══ HOGAR GASTOS ══
