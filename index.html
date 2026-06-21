@@ -1576,7 +1576,6 @@ function openDetalle(tipo, id, viajeId){
     {icon:'📝', lbl:'Descripción', val:g.descripcion||cat.label},
     {icon:'👤', lbl:'Pagado por',  val:quien},
     {icon:'📅', lbl:'Fecha',       val:fmtDate(g.fecha)||'—'},
-    ...(g.nota?[{icon:'💬', lbl:'Nota', val:g.nota}]:[]),
     ...(g.recurrente?[{icon:'🔄', lbl:'Tipo', val:'Gasto recurrente mensual'}]:[]),
   ];
   document.getElementById('detalle-body').innerHTML=rows.map(r=>`
