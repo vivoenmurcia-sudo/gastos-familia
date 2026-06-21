@@ -280,7 +280,7 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 /* MODALS */
 .modal-ov{position:fixed;inset:0;background:rgba(15,23,42,.65);backdrop-filter:blur(4px);z-index:1000;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
 .modal-ov.open{opacity:1;pointer-events:all}
-.modal-box{background:white;border-radius:24px 24px 0 0;padding:1.25rem 1.25rem 2.5rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.32,1)}
+.modal-box{background:white;border-radius:24px 24px 0 0;padding:1.25rem 1.25rem 2.5rem;width:100%;max-width:560px;max-height:90vh;overflow-y:scroll;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;transform:translateY(100%);transition:transform .3s cubic-bezier(.32,1,.32,1)}
 @media(min-width:640px){.modal-ov{align-items:center}.modal-box{border-radius:20px;max-height:88vh}}
 .modal-ov.open .modal-box{transform:translateY(0)}
 .modal-handle{width:40px;height:4px;background:#e2e8f0;border-radius:2px;margin:0 auto .9rem}
@@ -2094,7 +2094,6 @@ function openGVModal(editId){
     document.getElementById('gv-quien').value=currentUser?.id||pax[0];selCatV='comidas';
   }
   highlightCat('gv-cat',selCatV,'v');openModal('modal-gv');
-  setTimeout(()=>document.getElementById('gv-imp').focus(),320);
 }
 
 async function saveGastoViaje(){
@@ -2147,16 +2146,15 @@ function highlightCat(cid,selId,type){
 
 // ══ MODAL ══
 function openModal(id){
-  document.getElementById(id).classList.add('open');
+  const ov=document.getElementById(id);
+  ov.classList.add('open');
   document.body.style.overflow='hidden';
-  document.body.style.position='fixed';
-  document.body.style.width='100%';
+  // Scroll modal box to top
+  setTimeout(()=>{const box=ov.querySelector('.modal-box');if(box)box.scrollTop=0;},50);
 }
 function closeModal(id){
   document.getElementById(id).classList.remove('open');
   document.body.style.overflow='';
-  document.body.style.position='';
-  document.body.style.width='';
 }
 document.querySelectorAll('.modal-ov').forEach(ov=>ov.addEventListener('click',e=>{if(e.target===ov)closeModal(ov.id);}));
 
