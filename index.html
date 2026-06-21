@@ -656,8 +656,6 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     <div class="fg"><label class="flabel">Categoría</label><div class="cat-picker" id="gv-cat"></div></div>
     <div class="fg"><label class="flabel">Descripción</label>
       <input type="text" class="finput vf" id="gv-desc" placeholder="Ej: Hotel, cena restaurante..."></div>
-    <div class="fg"><label class="flabel">Nota <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
-      <textarea class="ftextarea" id="gv-nota" placeholder="Ej: Incluye desayuno, reserva anticipada..."></textarea></div>
     <div class="frow">
       <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="gv-fecha"></div>
       <div class="fg"><label class="flabel">Quién pagó</label><select class="finput" id="gv-quien"></select></div>
@@ -1580,7 +1578,6 @@ function openDetalle(tipo, id, viajeId){
     {icon:'📅', lbl:'Fecha',       val:fmtDate(g.fecha)||'—'},
     ...(g.nota?[{icon:'💬', lbl:'Nota', val:g.nota}]:[]),
     ...(g.recurrente?[{icon:'🔄', lbl:'Tipo', val:'Gasto recurrente mensual'}]:[]),
-    ...(tipo==='viaje'&&viajeId?[{icon:'✈️', lbl:'Viaje', val:viajesData[viajeId]?.nombre||'—'}]:[]),
   ];
   document.getElementById('detalle-body').innerHTML=rows.map(r=>`
     <div class="detalle-row">
@@ -2084,7 +2081,7 @@ function openGVModal(editId){
   if(editId&&v.gastos&&v.gastos[editId]){
     const g=v.gastos[editId];
     document.getElementById('gv-imp').value=g.importe;document.getElementById('gv-desc').value=g.descripcion||'';
-    document.getElementById('gv-nota').value=g.nota||'';document.getElementById('gv-fecha').value=g.fecha||todayISO();
+    document.getElementById('gv-fecha').value=g.fecha||todayISO();
     document.getElementById('gv-quien').value=g.quien_pago||pax[0];
     selCatV=g.categoria||'comidas';
     if(g.foto_url)loadExistingPhoto('gv',g.foto_url,g.foto_path||null);
@@ -2107,7 +2104,7 @@ async function saveGastoViaje(){
       if(foto_path&&foto_path!==res.path)await delPhoto(foto_path);
       foto_url=res.url;foto_path=res.path;
     }
-    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,timestamp:Date.now()};
+    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,timestamp:Date.now()};
     if(editGVId){await dbUpd(`gastos_viajes/${currentViaje}/gastos/${editGVId}`,data);toast('✅ Gasto actualizado');}
     else{await dbPush(`gastos_viajes/${currentViaje}/gastos`,data);toast('✅ Gasto añadido');}
     closeModal('modal-gv');
