@@ -374,6 +374,15 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 .export-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border:1.5px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:.72rem;font-weight:700;color:#475569;transition:all .18s}
 .export-btn:hover{border-color:#3b82f6;color:#3b82f6}
 
+/* DATE FILTER PILLS */
+.date-filters{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.85rem}
+.df-pill{padding:6px 12px;border:1.5px solid #e2e8f0;background:white;border-radius:20px;cursor:pointer;font-size:.73rem;font-weight:700;color:#64748b;white-space:nowrap;transition:all .18s}
+.df-pill.active{background:#0f172a;border-color:#0f172a;color:white}
+.date-range-inputs{display:flex;gap:6px;margin-bottom:.85rem;align-items:center;display:none}
+.date-range-inputs input{flex:1;border:1.5px solid #e2e8f0;border-radius:8px;padding:7px 9px;font-size:.78rem;font-family:inherit;color:#0f172a}
+.date-range-inputs input:focus{outline:none;border-color:#3b82f6}
+.date-range-inputs span{font-size:.75rem;color:#94a3b8;flex-shrink:0}
+
 /* SEARCH + FILTER BAR */
 .search-bar{display:flex;align-items:center;gap:6px;margin-bottom:.75rem;overflow:hidden}
 .search-input{flex:1;min-width:0;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 10px 9px 32px;font-size:.85rem;font-family:inherit;color:#0f172a;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 9px center;transition:border-color .18s}
@@ -686,12 +695,50 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
             <button type="button" class="photo-src-btn" onclick="document.getElementById('gv-pi-gallery').click();event.stopPropagation()">🖼️ Galería</button>
           </div>
         </div>
-        <img class="photo-prev" id="gv-prev" alt="">
+        <img class="photo-prev" id="gv-prev" alt="" onclick="openLb(this.src)">
         <div class="photo-size-info" id="gv-info"></div>
         <button class="photo-rm" id="gv-rm" onclick="rmPhoto('gv');event.stopPropagation()">✕</button>
       </div>
     </div>
+    <!-- Foto del lugar — solo para Comidas y Actividades -->
+    <div class="fg" id="gv-lugar-section" style="display:none">
+      <label class="flabel">🖼️ Foto del lugar <span style="color:#cbd5e1;font-weight:400">(restaurante, actividad...)</span></label>
+      <div class="photo-zone" id="gvl-pz">
+        <input type="file" id="gvl-pi-gallery" accept="image/*" onchange="onPhotoSelect(event,'gvl')" style="display:none">
+        <input type="file" id="gvl-pi-camera"  accept="image/*" capture="environment" onchange="onPhotoSelect(event,'gvl')" style="display:none">
+        <div class="photo-ph" id="gvl-ph">
+          <div class="photo-ph-icon">🖼️</div>
+          <div class="photo-ph-text">Foto del restaurante o lugar</div>
+          <div style="display:flex;gap:8px;margin-top:.6rem">
+            <button type="button" class="photo-src-btn" onclick="document.getElementById('gvl-pi-camera').click();event.stopPropagation()">📷 Cámara</button>
+            <button type="button" class="photo-src-btn" onclick="document.getElementById('gvl-pi-gallery').click();event.stopPropagation()">🖼️ Galería</button>
+          </div>
+        </div>
+        <img class="photo-prev" id="gvl-prev" alt="" onclick="openLb(this.src)">
+        <div class="photo-size-info" id="gvl-info"></div>
+        <button class="photo-rm" id="gvl-rm" onclick="rmPhoto('gvl');event.stopPropagation()">✕</button>
+      </div>
+    </div>
     <div class="upload-prog" id="gv-prog"><div class="spinner"></div><span>Subiendo foto...</span></div>
+    <div class="fg">
+      <label class="flabel">🏛️ Foto del lugar <span style="color:#cbd5e1;font-weight:400">(opcional · restaurante, hotel...)</span></label>
+      <div class="photo-zone" id="gl-pz">
+        <input type="file" id="gl-pi-gallery" accept="image/*" onchange="onPhotoSelect(event,'gl')" style="display:none">
+        <input type="file" id="gl-pi-camera"  accept="image/*" capture="environment" onchange="onPhotoSelect(event,'gl')" style="display:none">
+        <div class="photo-ph" id="gl-ph">
+          <div class="photo-ph-icon">🏛️</div>
+          <div class="photo-ph-text">Añadir foto del lugar</div>
+          <div style="display:flex;gap:8px;margin-top:.6rem">
+            <button type="button" class="photo-src-btn" onclick="document.getElementById('gl-pi-camera').click();event.stopPropagation()">📷 Cámara</button>
+            <button type="button" class="photo-src-btn" onclick="document.getElementById('gl-pi-gallery').click();event.stopPropagation()">🖼️ Galería</button>
+          </div>
+        </div>
+        <img class="photo-prev" id="gl-prev" alt="">
+        <div class="photo-size-info" id="gl-info"></div>
+        <button class="photo-rm" id="gl-rm" onclick="rmPhoto('gl');event.stopPropagation()">✕</button>
+      </div>
+    </div>
+    <div class="upload-prog" id="gl-prog"><div class="spinner"></div><span>Subiendo foto del lugar...</span></div>
     <div class="mfooter">
       <button class="btn btn-cancel" onclick="closeModal('modal-gv')">Cancelar</button>
       <button class="btn btn-vp" id="gv-save-btn" onclick="saveGastoViaje()">Guardar 💾</button>
@@ -739,7 +786,19 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         </div>
         <div style="height:100px;position:relative"><canvas id="catd-chart"></canvas></div>
       </div>
-      <!-- Lista gastos -->
+      <!-- Filtros fecha -->
+      <div class="date-filters" id="catd-date-filters">
+        <div class="df-pill active" onclick="setCatFiltro('mes',this)">📆 Todo el mes</div>
+        <div class="df-pill" onclick="setCatFiltro('semana',this)">🗓️ Esta semana</div>
+        <div class="df-pill" onclick="setCatFiltro('7dias',this)">📅 7 días</div>
+        <div class="df-pill" onclick="setCatFiltro('15dias',this)">📅 15 días</div>
+        <div class="df-pill" onclick="setCatFiltro('rango',this)">🔎 Rango</div>
+      </div>
+      <div class="date-range-inputs" id="catd-range-inputs">
+        <input type="date" id="catd-date-start" onchange="setCatFiltro('rango',null)">
+        <span>→</span>
+        <input type="date" id="catd-date-end" onchange="setCatFiltro('rango',null)">
+      </div>
       <div id="catd-lista"></div>
     </div>
   </div>
@@ -755,6 +814,18 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       <div id="vcatd-sub" style="font-size:.75rem;opacity:.75;margin-top:3px"></div>
     </div>
     <div style="padding:.9rem 1.1rem 1.5rem;overflow-y:auto;max-height:75vh">
+      <div class="date-filters" id="vcatd-date-filters">
+        <div class="df-pill active" onclick="setVCatFiltro('todo',this)">📆 Todo el viaje</div>
+        <div class="df-pill" onclick="setVCatFiltro('semana',this)">🗓️ Esta semana</div>
+        <div class="df-pill" onclick="setVCatFiltro('7dias',this)">📅 7 días</div>
+        <div class="df-pill" onclick="setVCatFiltro('15dias',this)">📅 15 días</div>
+        <div class="df-pill" onclick="setVCatFiltro('rango',this)">🔎 Rango</div>
+      </div>
+      <div class="date-range-inputs" id="vcatd-range-inputs">
+        <input type="date" id="vcatd-date-start" onchange="setVCatFiltro('rango',null)">
+        <span>→</span>
+        <input type="date" id="vcatd-date-end" onchange="setVCatFiltro('rango',null)">
+      </div>
       <div class="card" style="margin-bottom:.85rem;padding:.85rem">
         <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">
           <span>📋 Gastos de esta categoría</span>
@@ -883,9 +954,9 @@ let hogarData={},viajesData={},cfgData={};
 let lsnH=null,lsnV=null,lsnC=null;
 let editGHId=null,editVId=null,editGVId=null;
 let selCatH='supermercado',selCatV='comidas';
-let pendingFile={gh:null,gv:null};
-let existUrl={gh:null,gv:null};
-let existPath={gh:null,gv:null};
+let pendingFile={gh:null,gv:null,gvl:null};
+let existUrl={gh:null,gv:null,gvl:null};
+let existPath={gh:null,gv:null,gvl:null};
 let chartDonut=null,chartBar=null;
 
 // ══ UTILS ══
@@ -908,7 +979,7 @@ async function dbDel(p){await window._remove(window._ref(window._db,p))}
 function dbLsn(p,cb){return window._onVal(window._ref(window._db,p),s=>cb(s.val()))}
 
 // ══ PHOTOS ══
-async function compressImg(file,maxPx=900,q=0.78){
+async function compressImg(file,maxPx=1000,q=0.85){
   return new Promise((resolve,reject)=>{
     const reader=new FileReader();
     reader.onload=e=>{
@@ -999,12 +1070,15 @@ function rmPhoto(prefix){
   pendingFile[prefix]=null;existUrl[prefix]=null;existPath[prefix]=null;
   const g=document.getElementById(`${prefix}-pi-gallery`);if(g)g.value='';
   const c=document.getElementById(`${prefix}-pi-camera`);if(c)c.value='';
-  document.getElementById(`${prefix}-prev`).style.display='none';
-  document.getElementById(`${prefix}-prev`).src='';
-  document.getElementById(`${prefix}-ph`).style.display='flex';
-  document.getElementById(`${prefix}-rm`).style.display='none';
-  document.getElementById(`${prefix}-info`).style.display='none';
-  document.getElementById(`${prefix}-pz`).classList.remove('has-photo');
+  // Also handle gvl prefix input IDs
+  const lg=document.getElementById('gvl-pi-gallery');if(prefix==='gvl'&&lg)lg.value='';
+  const lc=document.getElementById('gvl-pi-camera');if(prefix==='gvl'&&lc)lc.value='';
+  const prev=document.getElementById(`${prefix}-prev`);
+  if(prev){prev.style.display='none';prev.src='';}
+  const ph=document.getElementById(`${prefix}-ph`);if(ph)ph.style.display='flex';
+  const rm=document.getElementById(`${prefix}-rm`);if(rm)rm.style.display='none';
+  const info=document.getElementById(`${prefix}-info`);if(info)info.style.display='none';
+  const pz=document.getElementById(`${prefix}-pz`);if(pz)pz.classList.remove('has-photo');
 }
 function setUploading(prefix,loading){
   document.getElementById(`${prefix}-prog`).style.display=loading?'flex':'none';
@@ -1607,12 +1681,25 @@ function openDetalle(tipo, id, viajeId){
   const quien=FAMILY.find(f=>f.id===(g.quien||g.quien_pago))?.name||'?';
   const canEdit=currentRole==='admin'||((g.quien||g.quien_pago)===currentUser?.id);
 
-  // Header
+  // Header con miniatura de foto
   const hdr=document.getElementById('detalle-header');
   hdr.style.background=`linear-gradient(135deg,${cat.color}dd,${cat.color}99)`;
   document.getElementById('detalle-cat-icon').textContent=cat.icon;
   document.getElementById('detalle-importe').textContent=fmtEur(g.importe);
   document.getElementById('detalle-cat-label').textContent=cat.label;
+
+  // Miniatura en esquina superior derecha del header — solo foto del lugar
+  const oldThumb=document.getElementById('detalle-thumb');
+  if(oldThumb)oldThumb.remove();
+  if(g.foto_lugar_url){
+    const thumb=document.createElement('div');
+    thumb.id='detalle-thumb';
+    thumb.style.cssText='position:absolute;top:12px;right:48px;cursor:pointer';
+    thumb.innerHTML=`<img src="${g.foto_lugar_url}" onclick="openLb('${g.foto_lugar_url}')"
+      style="width:68px;height:68px;object-fit:cover;border-radius:12px;border:2.5px solid rgba(255,255,255,.6);box-shadow:0 3px 12px rgba(0,0,0,.3)">
+      <div style="text-align:center;font-size:.6rem;color:rgba(255,255,255,.7);margin-top:3px;font-weight:700">🖼️ Ver lugar</div>`;
+    hdr.appendChild(thumb);
+  }
 
   // Body rows
   const rows=[
@@ -1969,36 +2056,91 @@ function exportViajeResumen(){
   w.document.close();
 }
 
+// ══ FILTROS FECHA CATEGORÍA ══
+let catFiltro='mes',vcatFiltro='todo';
+let currentCatId=null;
+
+function getDateRangeFilter(filtro,startId,endId){
+  const now=new Date(),today=todayISO();
+  if(filtro==='semana'){const d=new Date(now);d.setDate(now.getDate()-((now.getDay()+6)%7));return{start:d.toISOString().split('T')[0],end:today};}
+  if(filtro==='7dias'){const d=new Date(now);d.setDate(now.getDate()-6);return{start:d.toISOString().split('T')[0],end:today};}
+  if(filtro==='15dias'){const d=new Date(now);d.setDate(now.getDate()-14);return{start:d.toISOString().split('T')[0],end:today};}
+  if(filtro==='rango'){const s=document.getElementById(startId)?.value||'';const e=document.getElementById(endId)?.value||today;return s?{start:s,end:e}:null;}
+  return null;
+}
+function applyDateFilter(gastos,range){if(!range)return gastos;return gastos.filter(g=>{const f=g.fecha||'';return f>=range.start&&f<=range.end;});}
+
+function setCatFiltro(filtro,btn){
+  catFiltro=filtro;
+  document.querySelectorAll('#catd-date-filters .df-pill').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  document.getElementById('catd-range-inputs').style.display=filtro==='rango'?'flex':'none';
+  renderCatDetalleLista();
+}
+function setVCatFiltro(filtro,btn){
+  vcatFiltro=filtro;
+  document.querySelectorAll('#vcatd-date-filters .df-pill').forEach(b=>b.classList.remove('active'));
+  if(btn)btn.classList.add('active');
+  document.getElementById('vcatd-range-inputs').style.display=filtro==='rango'?'flex':'none';
+  renderVCatDetalleLista();
+}
+
+function renderCatDetalleLista(){
+  if(!currentCatId)return;
+  const cat=getCatAll(currentCatId);
+  const range=getDateRangeFilter(catFiltro,'catd-date-start','catd-date-end');
+  const all=Object.entries(hogarData).filter(([,g])=>g.categoria===currentCatId).sort((a,b)=>(b[1].fecha||'')>(a[1].fecha||'')?1:-1);
+  const filtered=applyDateFilter(all.map(([k,g])=>({...g,_key:k})),range);
+  const total=filtered.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const sub=document.getElementById('catd-sub');
+  if(sub)sub.textContent=`${fmtMon(get_currentMonth())} · ${filtered.length} gasto${filtered.length!==1?'s':''} · ${fmtEur(total)}`;
+  document.getElementById('catd-lista').innerHTML=filtered.length
+    ?'<div class="gasto-list">'+filtered.map(g=>{const quien=FAMILY.find(f=>f.id===g.quien)?.name||'?';
+      return`<div class="gasto-item" onclick="closeModal('modal-cat-detalle');setTimeout(()=>openDetalle('hogar','${g._key}'),200)">
+        <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
+        <div class="gasto-body"><div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
+        <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}${g.foto_url?'<span class="photo-badge">📸</span>':''}</div></div>
+        <div class="gasto-right"><div class="gasto-importe">${fmtEur(g.importe)}</div></div>
+      </div>`;}).join('')+'</div>'
+    :`<div class="empty" style="padding:1.5rem"><div class="ei">${cat.icon}</div><div class="et">Sin gastos en este período</div></div>`;
+}
+
+function renderVCatDetalleLista(){
+  if(!currentVCatId||!currentVCatViajeId)return;
+  const v=viajesData[currentVCatViajeId];if(!v)return;
+  const cat=getCat(CAT_VIAJE,currentVCatId);
+  const range=getDateRangeFilter(vcatFiltro,'vcatd-date-start','vcatd-date-end');
+  const all=Object.values(v.gastos||{}).filter(g=>g.categoria===currentVCatId).sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1);
+  const filtered=applyDateFilter(all,range);
+  const total=filtered.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const sub=document.getElementById('vcatd-sub');
+  if(sub)sub.textContent=`${esc(v.nombre||'Viaje')} · ${filtered.length} gasto${filtered.length!==1?'s':''} · ${fmtEur(total)}`;
+  document.getElementById('vcatd-lista').innerHTML=filtered.length
+    ?'<div class="gasto-list">'+filtered.map(g=>{const quien=FAMILY.find(f=>f.id===g.quien_pago)?.name||'?';
+      return`<div class="gasto-item">
+        <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
+        <div class="gasto-body"><div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
+        <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}</div></div>
+        <div class="gasto-right"><div class="gasto-importe">${fmtEur(g.importe)}</div></div>
+      </div>`;}).join('')+'</div>'
+    :`<div class="empty" style="padding:1.5rem"><div class="ei">${cat.icon}</div><div class="et">Sin gastos en este período</div></div>`;
+}
+
 let currentVCatId=null,currentVCatViajeId=null;
 
 function openViajeCatDetalle(viajeId,catId){
   currentVCatId=catId;currentVCatViajeId=viajeId;
+  vcatFiltro='todo';
+  document.querySelectorAll('#vcatd-date-filters .df-pill').forEach((b,i)=>{b.classList.toggle('active',i===0);});
+  document.getElementById('vcatd-range-inputs').style.display='none';
   const v=viajesData[viajeId];if(!v)return;
   const cat=getCat(CAT_VIAJE,catId);
-  const gastos=Object.values(v.gastos||{}).filter(g=>g.categoria===catId).sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1);
-  const total=gastos.reduce((s,g)=>s+parseFloat(g.importe||0),0);
-
   const hdr=document.getElementById('vcatd-header');
   hdr.style.background=`linear-gradient(135deg,${cat.color}dd,${cat.color}88)`;
   document.getElementById('vcatd-icon').textContent=cat.icon;
   document.getElementById('vcatd-title').textContent=cat.label;
-  document.getElementById('vcatd-sub').textContent=`${esc(v.nombre||'Viaje')} · ${gastos.length} gasto${gastos.length!==1?'s':''} · ${fmtEur(total)}`;
-
-  document.getElementById('vcatd-lista').innerHTML=gastos.length
-    ?'<div class="gasto-list">'+gastos.map(g=>{
-        const quien=FAMILY.find(f=>f.id===g.quien_pago)?.name||'?';
-        return`<div class="gasto-item">
-          <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
-          <div class="gasto-body">
-            <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
-            <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}</div>
-          </div>
-          <div class="gasto-right"><div class="gasto-importe">${fmtEur(g.importe)}</div></div>
-        </div>`;
-      }).join('')+'</div>'
-    :`<div class="empty" style="padding:1.5rem"><div class="ei">${cat.icon}</div><div class="et">Sin gastos en esta categoría</div></div>`;
-
   openModal('modal-vcat-detalle');
+  renderVCatDetalleLista();
 }
 
 function exportViajeCatPDF(){
@@ -2136,14 +2278,16 @@ function renderVGastos(id){
         ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>Paga: ${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?'<span class="photo-badge">📸</span>':''}
+          ${g.foto_lugar_url?'<span class="photo-badge" style="background:#fdf4ff;color:#9333ea">🖼️</span>':''}
         </div>
       </div>
       <div class="gasto-right" onclick="stopProp(event)">
         <div class="gasto-importe">${fmtEur(g.importe)}</div>
         ${canEdit?`<div class="gasto-btns">
-          ${g.foto_url?`<button class="iBtn ph" onclick="openLb('${g.foto_url}')">🖼️</button>`:''}
+          ${g.foto_url?`<button class="iBtn ph" onclick="openLb('${g.foto_url}')">📸</button>`:''}
+          ${g.foto_lugar_url?`<button class="iBtn ph" style="background:#fdf4ff;color:#9333ea" onclick="openLb('${g.foto_lugar_url}')">🖼️</button>`:''}
           <button class="iBtn ed" onclick="openGVModal('${gid}')">✏️</button>
-          <button class="iBtn dl" onclick="delGV('${gid}','${g.foto_path||''}')">🗑️</button>
+          <button class="iBtn dl" onclick="delGV('${gid}','${g.foto_path||''}','${g.foto_lugar_path||''}')">🗑️</button>
         </div>`:''}
       </div>
     </div>`;
@@ -2244,7 +2388,8 @@ function openGVModal(editId){
   editGVId=editId||null;
   const v=viajesData[currentViaje];if(!v)return;
   document.getElementById('modal-gv-title').textContent=editId?'✏️ Editar gasto':'➕ Gasto del viaje';
-  buildCatPicker('gv-cat',CAT_VIAJE,'v');rmPhoto('gv');
+  buildCatPicker('gv-cat',CAT_VIAJE,'v');rmPhoto('gv');rmPhoto('gvl');
+  const lugarSection=document.getElementById('gv-lugar-section');
   const pax=v.participantes||FAMILY.map(f=>f.id);
   document.getElementById('gv-quien').innerHTML=pax.map(pid=>{const p=FAMILY.find(f=>f.id===pid);return`<option value="${pid}">${p?.name||pid}</option>`;}).join('');
   if(editId&&v.gastos&&v.gastos[editId]){
@@ -2254,10 +2399,13 @@ function openGVModal(editId){
     document.getElementById('gv-quien').value=g.quien_pago||pax[0];
     selCatV=g.categoria||'comidas';
     if(g.foto_url)loadExistingPhoto('gv',g.foto_url,g.foto_path||null);
+    if(g.foto_lugar_url)loadExistingPhoto('gvl',g.foto_lugar_url,g.foto_lugar_path||null);
+    if(lugarSection)lugarSection.style.display=(selCatV==='comidas'||selCatV==='actividades')?'':'none';
   }else{
     document.getElementById('gv-imp').value='';document.getElementById('gv-desc').value='';
     document.getElementById('gv-fecha').value=todayISO();
     document.getElementById('gv-quien').value=currentUser?.id||pax[0];selCatV='comidas';
+    if(lugarSection)lugarSection.style.display=''; // Comidas por defecto → mostrar
   }
   highlightCat('gv-cat',selCatV,'v');openModal('modal-gv');
 }
@@ -2268,12 +2416,18 @@ async function saveGastoViaje(){
   setUploading('gv',true);
   try{
     let foto_url=existUrl.gv||null,foto_path=existPath.gv||null;
+    let foto_lugar_url=existUrl.gvl||null,foto_lugar_path=existPath.gvl||null;
     if(pendingFile.gv){
       const res=await uploadPhoto(pendingFile.gv,`tickets/viajes/${currentViaje}/${Date.now()}.jpg`);
       if(foto_path&&foto_path!==res.path)await delPhoto(foto_path);
       foto_url=res.url;foto_path=res.path;
     }
-    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,timestamp:Date.now()};
+    if(pendingFile.gvl){
+      const res=await uploadPhoto(pendingFile.gvl,`tickets/viajes/${currentViaje}/lugar_${Date.now()}.jpg`);
+      if(foto_lugar_path&&foto_lugar_path!==res.path)await delPhoto(foto_lugar_path);
+      foto_lugar_url=res.url;foto_lugar_path=res.path;
+    }
+    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,timestamp:Date.now()};
     if(editGVId){await dbUpd(`gastos_viajes/${currentViaje}/gastos/${editGVId}`,data);toast('✅ Gasto actualizado');}
     else{await dbPush(`gastos_viajes/${currentViaje}/gastos`,data);toast('✅ Gasto añadido');}
     closeModal('modal-gv');
@@ -2281,9 +2435,10 @@ async function saveGastoViaje(){
   finally{setUploading('gv',false);}
 }
 
-async function delGV(id,photoPath){
+async function delGV(id,photoPath,lugarPath=''){
   if(!confirm('¿Eliminar este gasto?'))return;
   if(photoPath)await delPhoto(photoPath);
+  if(lugarPath)await delPhoto(lugarPath);
   await dbDel(`gastos_viajes/${currentViaje}/gastos/${id}`);toast('🗑️ Gasto eliminado');
 }
 
@@ -2293,15 +2448,16 @@ function buildCatPicker(cid,cats,type){
 }
 function selectCat(cid,catId,type){
   if(type==='v')selCatV=catId;else selCatH=catId;
-  // Quitar selección de ambos pickers de hogar
   if(type==='h'){
     document.querySelectorAll('#gh-cat .cpick, #gh-cat-fijos .cpick').forEach(b=>b.classList.remove('sel','selv'));
-  } else {
-    highlightCat(cid,catId,type);
-  }
-  if(type==='h'){
     document.getElementById(`gh-cat-fijos-${catId}`)?.classList.add('sel');
     document.getElementById(`gh-cat-${catId}`)?.classList.add('sel');
+  } else {
+    highlightCat(cid,catId,type);
+    // Mostrar foto de lugar solo para Comidas y Actividades
+    const lugarSection=document.getElementById('gv-lugar-section');
+    if(lugarSection)lugarSection.style.display=(catId==='comidas'||catId==='actividades')?'':'none';
+    if(catId!=='comidas'&&catId!=='actividades')rmPhoto('gvl');
   }
   if(type!=='v')checkBudgetWarn();
 }
@@ -2328,6 +2484,10 @@ document.querySelectorAll('.modal-ov').forEach(ov=>ov.addEventListener('click',e
 let chartCatD=null;
 async function openCatDetalle(catId){
   currentCatId=catId;
+  catFiltro='mes';
+  // Reset filter pills
+  document.querySelectorAll('#catd-date-filters .df-pill').forEach((b,i)=>{b.classList.toggle('active',i===0);});
+  document.getElementById('catd-range-inputs').style.display='none';
   const cat=getCatAll(catId);
   const entries=Object.values(hogarData).filter(g=>g.categoria===catId).sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1);
   const total=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
@@ -2337,32 +2497,9 @@ async function openCatDetalle(catId){
   hdr.style.background=`linear-gradient(135deg,${cat.color}dd,${cat.color}88)`;
   document.getElementById('catd-icon').textContent=cat.icon;
   document.getElementById('catd-title').textContent=cat.label;
-  document.getElementById('catd-sub').textContent=`${fmtMon(get_currentMonth())} · ${entries.length} gasto${entries.length!==1?'s':''} · ${fmtEur(total)}`;
-
-  // Lista gastos
-  const lista=document.getElementById('catd-lista');
-  if(!entries.length){
-    lista.innerHTML=`<div class="empty" style="padding:1.5rem"><div class="ei">${cat.icon}</div><div class="et">Sin gastos en esta categoría</div></div>`;
-  } else {
-    lista.innerHTML=`<div style="font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#94a3b8;margin-bottom:8px">Gastos del mes</div>
-    <div class="gasto-list">${entries.map(g=>{
-      const quien=FAMILY.find(f=>f.id===g.quien)?.name||'?';
-      return`<div class="gasto-item" onclick="closeModal('modal-cat-detalle');setTimeout(()=>openDetalle('hogar','${Object.entries(hogarData).find(([,v])=>v===g)?.[0]}'),200)">
-        <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
-        <div class="gasto-body">
-          <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
-
-          <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}${g.foto_url?'<span class="photo-badge">📸</span>':''}</div>
-        </div>
-        <div class="gasto-right">
-          <div class="gasto-importe">${fmtEur(g.importe)}</div>
-          <div style="font-size:.62rem;color:#94a3b8">Ver →</div>
-        </div>
-      </div>`;
-    }).join('')}</div>`;
-  }
 
   openModal('modal-cat-detalle');
+  renderCatDetalleLista();
 
   // Chart tendencia últimos 6 meses (async)
   if(chartCatD){chartCatD.destroy();chartCatD=null;}
