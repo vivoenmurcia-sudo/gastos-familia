@@ -640,6 +640,25 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <button class="photo-rm" id="gh-rm" onclick="rmPhoto('gh');event.stopPropagation()">✕</button>
       </div>
     </div>
+    <!-- Foto del restaurante — solo para categoría Restaurante -->
+    <div class="fg" id="gh-lugar-section" style="display:none">
+      <label class="flabel">🍽️ Foto del restaurante <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span></label>
+      <div class="photo-zone" id="ghl-pz">
+        <input type="file" id="ghl-pi-gallery" accept="image/*" onchange="onPhotoSelect(event,'ghl')" style="display:none">
+        <input type="file" id="ghl-pi-camera"  accept="image/*" capture="environment" onchange="onPhotoSelect(event,'ghl')" style="display:none">
+        <div class="photo-ph" id="ghl-ph">
+          <div class="photo-ph-icon">🍽️</div>
+          <div class="photo-ph-text">Foto de la fachada o el local</div>
+          <div style="display:flex;gap:8px;margin-top:.6rem">
+            <button type="button" class="photo-src-btn" onclick="document.getElementById('ghl-pi-camera').click();event.stopPropagation()">📷 Cámara</button>
+            <button type="button" class="photo-src-btn" onclick="document.getElementById('ghl-pi-gallery').click();event.stopPropagation()">🖼️ Galería</button>
+          </div>
+        </div>
+        <img class="photo-prev" id="ghl-prev" alt="">
+        <div class="photo-size-info" id="ghl-info"></div>
+        <button class="photo-rm" id="ghl-rm" onclick="rmPhoto('ghl');event.stopPropagation()">✕</button>
+      </div>
+    </div>
     <div class="upload-prog" id="gh-prog"><div class="spinner"></div><span>Subiendo foto...</span></div>
     <div class="mfooter">
       <button class="btn btn-cancel" onclick="closeModal('modal-gh')">Cancelar</button>
@@ -954,9 +973,9 @@ let hogarData={},viajesData={},cfgData={};
 let lsnH=null,lsnV=null,lsnC=null;
 let editGHId=null,editVId=null,editGVId=null;
 let selCatH='supermercado',selCatV='comidas';
-let pendingFile={gh:null,gv:null,gvl:null};
-let existUrl={gh:null,gv:null,gvl:null};
-let existPath={gh:null,gv:null,gvl:null};
+let pendingFile={gh:null,gv:null,gvl:null,ghl:null};
+let existUrl={gh:null,gv:null,gvl:null,ghl:null};
+let existPath={gh:null,gv:null,gvl:null,ghl:null};
 let chartDonut=null,chartBar=null;
 
 // ══ UTILS ══
@@ -1414,7 +1433,7 @@ function renderHGastos(){
         ${canEdit?`<div class="gasto-btns">
           ${g.foto_url?`<button class="iBtn ph" onclick="openLb('${g.foto_url}')">🖼️</button>`:''}
           <button class="iBtn ed" onclick="openGHModal('${id}')">✏️</button>
-          <button class="iBtn dl" onclick="delGH('${id}','${g.foto_path||''}')">🗑️</button>
+          <button class="iBtn dl" onclick="delGH('${id}','${g.foto_path||''}','${g.foto_lugar_path||''}')">🗑️</button>
         </div>`:''}
       </div>
     </div>`;
@@ -1681,27 +1700,31 @@ function openDetalle(tipo, id, viajeId){
   const quien=FAMILY.find(f=>f.id===(g.quien||g.quien_pago))?.name||'?';
   const canEdit=currentRole==='admin'||((g.quien||g.quien_pago)===currentUser?.id);
 
-  // Header con miniatura de foto
+  // Header — con foto de fondo si hay foto del lugar
   const hdr=document.getElementById('detalle-header');
-  hdr.style.background=`linear-gradient(135deg,${cat.color}dd,${cat.color}99)`;
-  document.getElementById('detalle-cat-icon').textContent=cat.icon;
-  document.getElementById('detalle-importe').textContent=fmtEur(g.importe);
-  document.getElementById('detalle-cat-label').textContent=cat.label;
+  const lugarUrl=g.foto_lugar_url||(tipo==='hogar'&&cat.id==='restaurante'?g.foto_url:null);
+  const ticketUrl=(tipo==='viaje'||cat.id==='restaurante')&&g.foto_lugar_url?g.foto_url:g.foto_url;
 
-  // Miniatura en esquina superior derecha del header
-  // - Viajes: foto del lugar (restaurante, actividad...)
-  // - Hogar: foto del ticket si es categoría Restaurante
-  const oldThumb=document.getElementById('detalle-thumb');
-  if(oldThumb)oldThumb.remove();
-  const thumbUrl=g.foto_lugar_url||(tipo==='hogar'&&cat.id==='restaurante'?g.foto_url:null);
-  if(thumbUrl){
-    const thumb=document.createElement('div');
-    thumb.id='detalle-thumb';
-    thumb.style.cssText='position:absolute;top:12px;right:48px;cursor:pointer';
-    thumb.innerHTML=`<img src="${thumbUrl}" onclick="openLb('${thumbUrl}')"
-      style="width:68px;height:68px;object-fit:cover;border-radius:12px;border:2.5px solid rgba(255,255,255,.6);box-shadow:0 3px 12px rgba(0,0,0,.3)">
-      <div style="text-align:center;font-size:.6rem;color:rgba(255,255,255,.7);margin-top:3px;font-weight:700">🍽️ Ver foto</div>`;
-    hdr.appendChild(thumb);
+  if(lugarUrl){
+    // Header con foto de fondo
+    hdr.style.cssText='padding:0;color:white;position:relative;overflow:hidden;border-radius:0';
+    hdr.innerHTML=`
+      <img src="${lugarUrl}" style="width:100%;height:170px;object-fit:cover;display:block">
+      <div style="position:absolute;inset:0;background:linear-gradient(to bottom,rgba(0,0,0,.1) 0%,rgba(0,0,0,.6) 100%)"></div>
+      <button onclick="closeModal('modal-detalle')" style="position:absolute;top:10px;right:10px;background:rgba(255,255,255,.25);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center;z-index:2">✕</button>
+      <div style="position:absolute;bottom:0;left:0;padding:.9rem 1.1rem;z-index:2">
+        <div style="font-size:.7rem;font-weight:700;opacity:.8;text-transform:uppercase;letter-spacing:.1em;margin-bottom:2px">${cat.icon} ${cat.label}</div>
+        <div style="font-size:2rem;font-weight:900;letter-spacing:-.02em">${fmtEur(g.importe)}</div>
+      </div>`;
+  } else {
+    // Header de color normal
+    hdr.style.cssText='padding:1.5rem 1.25rem 1rem;color:white;position:relative';
+    hdr.style.background=`linear-gradient(135deg,${cat.color}dd,${cat.color}99)`;
+    hdr.innerHTML=`
+      <button onclick="closeModal('modal-detalle')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.2);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center">✕</button>
+      <div style="font-size:2.5rem;margin-bottom:.5rem">${cat.icon}</div>
+      <div style="font-size:2rem;font-weight:900;letter-spacing:-.02em">${fmtEur(g.importe)}</div>
+      <div style="font-size:.75rem;font-weight:700;opacity:.75;margin-top:3px;text-transform:uppercase;letter-spacing:.08em">${cat.label}</div>`;
   }
 
   // Body rows
@@ -1720,12 +1743,14 @@ function openDetalle(tipo, id, viajeId){
       </div>
     </div>`).join('');
 
-  // Foto
+  // Ticket abajo — solo si hay foto y no es la misma que ya se muestra en el header
   const fotoDiv=document.getElementById('detalle-foto');
   const fotoImg=document.getElementById('detalle-foto-img');
-  if(g.foto_url){
-    fotoImg.src=g.foto_url;
-    fotoImg.onclick=()=>openLb(g.foto_url);
+  const ticketFoto=g.foto_url;
+  const esLaMismaFoto=(tipo==='hogar'&&cat.id==='restaurante'&&!g.foto_lugar_url); // En hogar restaurante sin foto lugar, el ticket ES la foto de fondo
+  if(ticketFoto&&!esLaMismaFoto){
+    fotoImg.src=ticketFoto;
+    fotoImg.onclick=()=>openLb(ticketFoto);
     fotoDiv.style.display='block';
   } else {
     fotoDiv.style.display='none';
@@ -1737,7 +1762,7 @@ function openDetalle(tipo, id, viajeId){
     if(tipo==='hogar'){
       btnsEl.innerHTML=`
         <button class="btn btn-cancel" style="flex:none;padding:10px 16px" onclick="closeModal('modal-detalle');openGHModal('${id}')">✏️ Editar</button>
-        <button class="btn btn-cancel" style="flex:none;padding:10px 16px;color:#ef4444" onclick="closeModal('modal-detalle');delGH('${id}','${g.foto_path||''}')">🗑️ Borrar</button>`;
+        <button class="btn btn-cancel" style="flex:none;padding:10px 16px;color:#ef4444" onclick="closeModal('modal-detalle');delGH('${id}','${g.foto_path||''}','${g.foto_lugar_path||''}')">🗑️ Borrar</button>`;
     } else {
       btnsEl.innerHTML=`
         <button class="btn btn-cancel" style="flex:none;padding:10px 16px" onclick="closeModal('modal-detalle');openGVModal('${id}')">✏️ Editar</button>
@@ -1851,7 +1876,7 @@ function openGHModal(editId){
   const fijoArrow=document.getElementById('gh-fijos-body-arrow');
   if(fijoBody){fijoBody.style.display=esFijo?'block':'none';}
   if(fijoArrow){fijoArrow.classList.toggle('open',esFijo);}
-  rmPhoto('gh');document.getElementById('budget-warn-box').style.display='none';
+  rmPhoto('gh');rmPhoto('ghl');document.getElementById('budget-warn-box').style.display='none';
   if(editId&&hogarData[editId]){
     const g=hogarData[editId];
     document.getElementById('gh-imp').value=g.importe;
@@ -1862,6 +1887,7 @@ function openGHModal(editId){
     document.getElementById('gh-rec').checked=!!g.recurrente;
     selCatH=g.categoria||'supermercado';
     if(g.foto_url)loadExistingPhoto('gh',g.foto_url,g.foto_path||null);
+    if(g.foto_lugar_url)loadExistingPhoto('ghl',g.foto_lugar_url,g.foto_lugar_path||null);
   }else{
     document.getElementById('gh-imp').value='';
     document.getElementById('gh-desc').value='';
@@ -1871,6 +1897,8 @@ function openGHModal(editId){
     document.getElementById('gh-rec').checked=false;
     selCatH='supermercado';
   }
+  const lugarSection=document.getElementById('gh-lugar-section');
+  if(lugarSection)lugarSection.style.display=selCatH==='restaurante'?'':'none';
   highlightCat('gh-cat',selCatH,'h');
   openModal('modal-gh');
   setTimeout(()=>document.getElementById('gh-imp').focus(),320);
@@ -1885,12 +1913,18 @@ async function saveGastoHogar(){
     const mesGasto=fecha.substring(0,7); // Mes según la fecha del gasto
     const mesActual=get_currentMonth();
     let foto_url=existUrl.gh||null,foto_path=existPath.gh||null;
+    let foto_lugar_url=existUrl.ghl||null,foto_lugar_path=existPath.ghl||null;
     if(pendingFile.gh){
       const res=await uploadPhoto(pendingFile.gh,`tickets/hogar/${mesGasto}/${Date.now()}.jpg`);
       if(foto_path&&foto_path!==res.path)await delPhoto(foto_path);
       foto_url=res.url;foto_path=res.path;
     }
-    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,timestamp:Date.now()};
+    if(pendingFile.ghl){
+      const res=await uploadPhoto(pendingFile.ghl,`tickets/hogar/${mesGasto}/lugar_${Date.now()}.jpg`);
+      if(foto_lugar_path&&foto_lugar_path!==res.path)await delPhoto(foto_lugar_path);
+      foto_lugar_url=res.url;foto_lugar_path=res.path;
+    }
+    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,timestamp:Date.now()};
     if(editGHId){
       // Si la fecha cambia de mes, mover a nuevo mes
       if(mesGasto!==mesActual){
@@ -1914,9 +1948,10 @@ async function saveGastoHogar(){
   finally{setUploading('gh',false);}
 }
 
-async function delGH(id,photoPath){
+async function delGH(id,photoPath,lugarPath=''){
   if(!confirm('¿Eliminar este gasto?'))return;
   if(photoPath)await delPhoto(photoPath);
+  if(lugarPath)await delPhoto(lugarPath);
   await dbDel(`gastos_hogar/${get_currentMonth()}/${id}`);
   toast('🗑️ Gasto eliminado');
 }
@@ -2455,9 +2490,12 @@ function selectCat(cid,catId,type){
     document.querySelectorAll('#gh-cat .cpick, #gh-cat-fijos .cpick').forEach(b=>b.classList.remove('sel','selv'));
     document.getElementById(`gh-cat-fijos-${catId}`)?.classList.add('sel');
     document.getElementById(`gh-cat-${catId}`)?.classList.add('sel');
+    // Mostrar foto de restaurante solo para categoría Restaurante
+    const lugarSection=document.getElementById('gh-lugar-section');
+    if(lugarSection)lugarSection.style.display=catId==='restaurante'?'':'none';
+    if(catId!=='restaurante')rmPhoto('ghl');
   } else {
     highlightCat(cid,catId,type);
-    // Mostrar foto de lugar solo para Comidas y Actividades
     const lugarSection=document.getElementById('gv-lugar-section');
     if(lugarSection)lugarSection.style.display=(catId==='comidas'||catId==='actividades')?'':'none';
     if(catId!=='comidas'&&catId!=='actividades')rmPhoto('gvl');
