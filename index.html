@@ -145,7 +145,7 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .acordeon-arrow.open{transform:rotate(180deg)}
 .acordeon-body{overflow:hidden;transition:all .25s}
 .gasto-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
-.gasto-importe{font-size:1rem;font-weight:900;color:#0f172a}
+.gasto-importe{font-size:1.15rem;font-weight:900;color:#0f172a}
 .gasto-btns{display:flex;gap:3px}
 .iBtn{width:28px;height:28px;border:none;border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;transition:all .15s}
 .iBtn.ed{background:#eff6ff;color:#3b82f6}.iBtn.ed:hover{background:#dbeafe}
@@ -309,9 +309,9 @@ input:checked+.toggle-track{background:#8b5cf6}
 input:checked+.toggle-track:before{transform:translateX(18px)}
 
 /* CAT PICKER */
-.cat-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:5px}
-.cpick{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:2px solid #e2e8f0;border-radius:10px;background:white;cursor:pointer;transition:all .18s;font-size:.58rem;font-weight:700;color:#64748b}
-.cpick .ce{font-size:1.2rem}
+.cat-picker{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.cpick{display:flex;flex-direction:column;align-items:center;gap:3px;padding:10px 4px;border:2px solid #e2e8f0;border-radius:12px;background:white;cursor:pointer;transition:all .18s;font-size:.65rem;font-weight:700;color:#64748b}
+.cpick .ce{font-size:1.5rem}
 .cpick.sel{border-color:#3b82f6;background:#eff6ff;color:#1d4ed8}
 .cpick.selv{border-color:#ea580c;background:#fff7ed;color:#c2410c}
 
@@ -371,6 +371,36 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .export-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border:1.5px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:.72rem;font-weight:700;color:#475569;transition:all .18s}
 .export-btn:hover{border-color:#3b82f6;color:#3b82f6}
+
+/* SEARCH + FILTER BAR */
+.search-bar{display:flex;align-items:center;gap:8px;margin-bottom:.75rem}
+.search-input{flex:1;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 13px 9px 36px;font-size:.85rem;font-family:inherit;color:#0f172a;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center;transition:border-color .18s}
+.search-input:focus{outline:none;border-color:#3b82f6}
+.sort-select{border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 10px;font-size:.78rem;font-family:inherit;color:#475569;background:white;cursor:pointer;flex-shrink:0}
+.sort-select:focus{outline:none;border-color:#3b82f6}
+
+/* PERSON FILTER PILLS */
+.person-filters{display:flex;gap:6px;margin-bottom:.75rem;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.person-filters::-webkit-scrollbar{display:none}
+.pf-pill{display:flex;align-items:center;gap:5px;padding:5px 12px;border:1.5px solid #e2e8f0;background:white;border-radius:20px;cursor:pointer;font-size:.75rem;font-weight:700;color:#64748b;transition:all .18s;white-space:nowrap;flex-shrink:0}
+.pf-pill.active{background:#0f172a;border-color:#0f172a;color:white}
+.pf-dot{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:white;flex-shrink:0}
+
+/* HERO PROGRESS */
+.hero-progress{margin-top:.75rem}
+.hero-progress-row{display:flex;justify-content:space-between;font-size:.68rem;color:rgba(255,255,255,.6);margin-bottom:4px}
+.hero-progress-bar{background:rgba(255,255,255,.15);border-radius:99px;height:6px;overflow:hidden}
+.hero-progress-fill{height:100%;border-radius:99px;background:rgba(255,255,255,.8);transition:width .6s}
+.hero-progress-fill.over{background:#fca5a5}
+.hero-persons{display:flex;gap:10px;margin-top:.6rem;flex-wrap:wrap}
+.hero-person{display:flex;align-items:center;gap:5px;font-size:.68rem;color:rgba(255,255,255,.7)}
+.hero-person-av{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:white;flex-shrink:0}
+
+/* TRIP CARD IMAGE */
+.trip-card-img{position:absolute;inset:0;border-radius:16px;overflow:hidden;z-index:0}
+.trip-card-img img{width:100%;height:100%;object-fit:cover;opacity:.12;filter:saturate(1.2)}
+.trip-card-img-gradient{position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.95) 0%,rgba(255,255,255,.85) 100%)}
+.trip-card{position:relative}
 .person-row{display:flex;align-items:center;justify-content:space-between;padding:.65rem 0;cursor:pointer;transition:background .15s;border-radius:8px}
 .person-row:hover{background:#f8fafc}
 .person-row-left{display:flex;align-items:center;gap:10px}
@@ -441,6 +471,14 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <div class="hero-month-lbl" id="hero-month-lbl">—</div>
         <div class="hero-amount" id="hero-amount">0,00 €</div>
         <div class="hero-sub" id="hero-sub">—</div>
+        <div class="hero-progress" id="hero-progress" style="display:none">
+          <div class="hero-progress-row">
+            <span id="hero-prog-lbl">Presupuesto</span>
+            <span id="hero-prog-pct"></span>
+          </div>
+          <div class="hero-progress-bar"><div class="hero-progress-fill" id="hero-prog-fill"></div></div>
+        </div>
+        <div class="hero-persons" id="hero-persons"></div>
         <select class="year-select" id="year-select" onchange="onYearChange(this.value)"></select>
         <div class="month-pills-outer"><div class="month-pills-wrap" id="month-pills"></div></div>
       </div>
@@ -454,6 +492,16 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 
       <div id="hogar-gastos">
         <div id="recurrentes-banner" style="display:none"></div>
+        <div class="search-bar">
+          <input type="text" class="search-input" id="gastos-search" placeholder="Buscar gasto..." oninput="filterGastos()">
+          <select class="sort-select" id="gastos-sort" onchange="filterGastos()">
+            <option value="fecha-desc">📅 Más reciente</option>
+            <option value="fecha-asc">📅 Más antiguo</option>
+            <option value="importe-desc">💰 Mayor importe</option>
+            <option value="importe-asc">💰 Menor importe</option>
+          </select>
+        </div>
+        <div class="person-filters" id="person-filters"></div>
         <div id="gastos-list"></div>
       </div>
 
@@ -1161,13 +1209,35 @@ function updateHero(){
   document.getElementById('hero-amount').textContent=fmtEur(total);
   const rec=entries.filter(g=>g.recurrente).length;
   document.getElementById('hero-sub').textContent=`${entries.length} operaciones · ${entries.filter(g=>g.foto_url).length} con ticket${rec?` · ${rec} recurrentes`:''}`;
+
+  // Barra de progreso total vs presupuesto
+  const pres=cfgData.presupuestos||{};
+  const totalBudget=Object.values(pres).reduce((s,v)=>s+parseFloat(v||0),0);
+  const progEl=document.getElementById('hero-progress');
+  if(totalBudget>0){
+    const pct=Math.min(100,(total/totalBudget)*100);
+    const fill=document.getElementById('hero-prog-fill');
+    fill.style.width=pct+'%';
+    fill.className='hero-progress-fill'+(pct>=100?' over':'');
+    document.getElementById('hero-prog-lbl').textContent=`${fmtEur(total)} de ${fmtEur(totalBudget)}`;
+    document.getElementById('hero-prog-pct').textContent=Math.round(pct)+'%';
+    progEl.style.display='block';
+  }else{progEl.style.display='none';}
+
+  // Totales por persona
+  const personsEl=document.getElementById('hero-persons');
+  const personTotals=FAMILY.map(f=>({...f,total:entries.filter(g=>g.quien===f.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(f=>f.total>0).sort((a,b)=>b.total-a.total);
+  personsEl.innerHTML=personTotals.map(f=>`<div class="hero-person"><div class="hero-person-av ${f.avClass}">${f.letter}</div><span>${f.name}: ${fmtEur(f.total)}</span></div>`).join('');
+
+  // Person filter pills
+  buildPersonFilters(personTotals);
 }
 
 // ══ HOGAR GASTOS ══
 function renderHGastos(){
   updateHero();
   checkRecurrentesBanner();
-  const entries=Object.entries(hogarData).sort((a,b)=>(b[1].fecha||'')>(a[1].fecha||'')?1:-1);
+  const entries=getFilteredSortedEntries();
   const el=document.getElementById('gastos-list');
 
   // Viajes activos este mes
@@ -1273,7 +1343,63 @@ function renderHGastos(){
   el.innerHTML=`${viajesSection}${generalSec}${fijosSec}`;
 }
 
-// ══ RECURRENTES BANNER ══
+// ══ SEARCH / FILTER / SORT ══
+let activePersonFilter=null;
+
+function buildPersonFilters(persons){
+  const el=document.getElementById('person-filters');
+  if(!el)return;
+  if(!persons.length){el.innerHTML='';return;}
+  el.innerHTML='<div class="pf-pill'+(activePersonFilter===null?' active':'')+'" onclick="setPersonFilter(null)">Todos</div>'
+    +persons.map(f=>`<div class="pf-pill${activePersonFilter===f.id?' active':''}" onclick="setPersonFilter('${f.id}')"><div class="pf-dot ${f.avClass}">${f.letter}</div>${f.name}</div>`).join('');
+}
+
+function setPersonFilter(id){
+  activePersonFilter=id;
+  buildPersonFilters(FAMILY.map(f=>({...f,total:Object.values(hogarData).filter(g=>g.quien===f.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(f=>f.total>0).sort((a,b)=>b.total-a.total));
+  renderHGastos();
+}
+
+function filterGastos(){renderHGastos();}
+
+function getFilteredSortedEntries(){
+  const search=(document.getElementById('gastos-search')?.value||'').toLowerCase();
+  const sort=document.getElementById('gastos-sort')?.value||'fecha-desc';
+  let entries=Object.entries(hogarData);
+  // Filter by person
+  if(activePersonFilter)entries=entries.filter(([,g])=>g.quien===activePersonFilter);
+  // Filter by search
+  if(search)entries=entries.filter(([,g])=>{
+    const cat=getCatAll(g.categoria);
+    return(g.descripcion||'').toLowerCase().includes(search)||(g.nota||'').toLowerCase().includes(search)||cat.label.toLowerCase().includes(search);
+  });
+  // Sort
+  entries.sort((a,b)=>{
+    if(sort==='fecha-desc')return(b[1].fecha||'')>(a[1].fecha||'')?1:-1;
+    if(sort==='fecha-asc') return(a[1].fecha||'')>(b[1].fecha||'')?1:-1;
+    if(sort==='importe-desc')return parseFloat(b[1].importe||0)-parseFloat(a[1].importe||0);
+    if(sort==='importe-asc') return parseFloat(a[1].importe||0)-parseFloat(b[1].importe||0);
+    return 0;
+  });
+  return entries;
+}
+
+// ══ RECURRENTES — sin duplicados ══
+async function addRecurrentes(pendientes){
+  let added=0,skipped=0;
+  const currentDescs=Object.values(hogarData).map(g=>g.categoria+'_'+(g.descripcion||'').toLowerCase());
+  for(const g of pendientes){
+    const key=g.categoria+'_'+(g.descripcion||'').toLowerCase();
+    if(currentDescs.includes(key)){skipped++;continue;}
+    const data={...g,fecha:todayISO(),timestamp:Date.now()};
+    await dbPush(`gastos_hogar/${get_currentMonth()}`,data);
+    added++;
+  }
+  if(added>0&&skipped>0)toast(`✅ ${added} añadido${added!==1?'s':''} · ${skipped} ya existía${skipped!==1?'n':''}`);
+  else if(added>0)toast(`✅ ${added} gasto${added!==1?'s':''} añadido${added!==1?'s':''}`);
+  else toast(`ℹ️ Todos los recurrentes ya están este mes`);
+  document.getElementById('recurrentes-banner').style.display='none';
+}
 function checkRecurrentesBanner(){
   const banner=document.getElementById('recurrentes-banner');
   const [y,m]=get_currentMonth().split('-').map(Number);
@@ -1661,26 +1787,89 @@ async function delGH(id,photoPath){
   toast('🗑️ Gasto eliminado');
 }
 
-// ══ EXPORT ══
+// ══ EXPORT PDF ══
 function exportMes(){
   const entries=Object.values(hogarData).sort((a,b)=>(a.fecha||'')>(b.fecha||'')?1:-1);
   const total=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const fijoIds=CAT_FIJOS.map(c=>c.id);
+  const fijos=entries.filter(g=>fijoIds.includes(g.categoria));
+  const generales=entries.filter(g=>!fijoIds.includes(g.categoria));
+  const totalFijos=fijos.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const totalGenerales=generales.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const pres=cfgData.presupuestos||{};
+  const totalBudget=Object.values(pres).reduce((s,v)=>s+parseFloat(v||0),0);
+  const porPersona=FAMILY.map(f=>({...f,total:entries.filter(g=>g.quien===f.id).reduce((s,g)=>s+parseFloat(g.importe||0),0),count:entries.filter(g=>g.quien===f.id).length})).filter(f=>f.total>0).sort((a,b)=>b.total-a.total);
+  const porCat=ALL_CATS.map(c=>({...c,spent:entries.filter(g=>g.categoria===c.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent);
+  const rowsHtml=(list)=>list.map(g=>{const cat=getCatAll(g.categoria);const quien=FAMILY.find(f=>f.id===g.quien)?.name||'?';
+    return '<tr><td>'+fmtDate(g.fecha)+'</td><td>'+cat.icon+' '+cat.label+'</td><td>'+esc(g.descripcion||'—')+(g.nota?'<br><small>'+esc(g.nota)+'</small>':'')+'</td><td>'+quien+'</td><td class="num">'+fmtEur(g.importe)+'</td></tr>';
+  }).join('');
+  const pct=totalBudget>0?Math.round((total/totalBudget)*100):0;
   const w=window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Gastos ${fmtMon(get_currentMonth())}</title>
-  <style>body{font-family:system-ui,sans-serif;padding:2rem;color:#0f172a;max-width:700px;margin:0 auto}h1{font-size:1.5rem;margin-bottom:.25rem}p{color:#64748b;margin-bottom:1.5rem}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;padding:.6rem .8rem;text-align:left;font-size:.75rem;text-transform:uppercase;color:#64748b;letter-spacing:.05em}td{padding:.6rem .8rem;border-bottom:1px solid #f1f5f9;font-size:.85rem}.total{font-weight:900;font-size:1rem}.importe{text-align:right;font-weight:700}@media print{button{display:none}}</style>
-  
-</head><body>
-  <button onclick="window.print()" style="padding:8px 16px;background:#1d4ed8;color:white;border:none;border-radius:8px;cursor:pointer;margin-bottom:1rem;font-weight:700">🖨️ Imprimir / Guardar PDF</button>
-  <h1>💰 Gastos ${fmtMon(get_currentMonth())}</h1>
-  <p>Exportado el ${new Date().toLocaleDateString('es-ES')} · ${entries.length} operaciones</p>
-  <table><thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Quién</th><th style="text-align:right">Importe</th></tr></thead><tbody>
-  ${entries.map(g=>{const cat=getCatAll(g.categoria);const quien=FAMILY.find(f=>f.id===g.quien)?.name||'?';return`<tr><td>${fmtDate(g.fecha)}</td><td>${cat.icon} ${cat.label}</td><td>${esc(g.descripcion||'—')}${g.nota?`<br><small style="color:#94a3b8">${esc(g.nota)}</small>`:''}</td><td>${quien}</td><td class="importe">${fmtEur(g.importe)}</td></tr>`;}).join('')}
-  <tr style="background:#f8fafc"><td colspan="4" class="total">TOTAL ${fmtMon(get_currentMonth())}</td><td class="importe total">${fmtEur(total)}</td></tr>
-  </tbody></table></body></html>`);
+  w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Gastos '+fmtMon(get_currentMonth())+'</title>'
+  +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;color:#0f172a;padding:2rem;max-width:800px;margin:0 auto;font-size:14px}'
+  +'h1{font-size:1.8rem;font-weight:900;margin-bottom:.2rem}.sub{color:#64748b;margin-bottom:1.5rem;font-size:.85rem}'
+  +'.print-btn{padding:10px 20px;background:#1d4ed8;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-bottom:1.5rem}'
+  +'.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem;margin-bottom:1.5rem}'
+  +'.box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.85rem;text-align:center}'
+  +'.box .v{font-size:1.5rem;font-weight:900}.box .l{font-size:.68rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-top:3px}'
+  +'h2{font-size:.9rem;font-weight:800;padding:.5rem .75rem;background:#f1f5f9;border-radius:8px;margin-bottom:.75rem;margin-top:1.25rem}'
+  +'table{width:100%;border-collapse:collapse;margin-bottom:.5rem}'
+  +'th{background:#f1f5f9;padding:.55rem .75rem;text-align:left;font-size:.7rem;text-transform:uppercase;color:#64748b}'
+  +'td{padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;font-size:.83rem}.num{text-align:right;font-weight:700}'
+  +'.tr{background:#f8fafc;font-weight:900}.tr td{font-size:.9rem;padding:.65rem .75rem}'
+  +'.cr{display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid #f8fafc;font-size:.85rem}'
+  +'.pbar{background:#f1f5f9;border-radius:99px;height:10px;overflow:hidden;margin:.5rem 0}'
+  +'.pfill{height:100%;border-radius:99px}'
+  +'@media print{.print-btn{display:none}}</style></head><body>'
+  +'<button class="print-btn" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+  +'<h1>💰 '+fmtMon(get_currentMonth())+'</h1>'
+  +'<div class="sub">Exportado el '+new Date().toLocaleDateString('es-ES')+' · '+entries.length+' operaciones</div>'
+  +'<div class="grid3">'
+  +'<div class="box"><div class="v">'+fmtEur(total)+'</div><div class="l">Total mes</div></div>'
+  +'<div class="box"><div class="v">'+fmtEur(totalFijos)+'</div><div class="l">Gastos fijos</div></div>'
+  +'<div class="box"><div class="v">'+fmtEur(totalGenerales)+'</div><div class="l">Día a día</div></div>'
+  +'</div>'
+  +(totalBudget>0?'<h2>📊 Presupuesto del mes</h2><div class="pbar"><div class="pfill" style="width:'+Math.min(100,pct)+'%;background:'+(total>totalBudget?'#ef4444':'#22c55e')+'"></div></div><div style="display:flex;justify-content:space-between;font-size:.82rem;color:#64748b;margin-bottom:.5rem"><span>Gastado: <b>'+fmtEur(total)+'</b></span><span>Presupuesto: <b>'+fmtEur(totalBudget)+'</b></span><span><b>'+pct+'%</b></span></div>':'')
+  +'<h2>👥 Por persona</h2>'
+  +porPersona.map(f=>'<div class="cr"><span><b>'+f.name+'</b> <span style="color:#94a3b8;font-size:.78rem">'+f.count+' op.</span></span><b>'+fmtEur(f.total)+'</b></div>').join('')
+  +'<h2>📊 Por categoría</h2>'
+  +porCat.map(c=>'<div class="cr"><span>'+c.icon+' '+c.label+'</span><b>'+fmtEur(c.spent)+'</b></div>').join('')
+  +(fijos.length?'<h2>💡 Gastos fijos</h2><table><thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Quién</th><th>Importe</th></tr></thead><tbody>'+rowsHtml(fijos)+'</tbody><tfoot><tr class="tr"><td colspan="4">TOTAL FIJOS</td><td class="num">'+fmtEur(totalFijos)+'</td></tr></tfoot></table>':'')
+  +(generales.length?'<h2>🛒 Gastos del día a día</h2><table><thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Quién</th><th>Importe</th></tr></thead><tbody>'+rowsHtml(generales)+'</tbody><tfoot><tr class="tr"><td colspan="4">TOTAL DÍA A DÍA</td><td class="num">'+fmtEur(totalGenerales)+'</td></tr></tfoot></table>':'')
+  +'<div style="text-align:center;margin-top:2rem;color:#94a3b8;font-size:.75rem">💰 Gastos Familia</div>'
+  +'</body></html>');
   w.document.close();
 }
 
-// ══ VIAJES LIST ══
+// Unsplash photo IDs for common destinations (no API key needed)
+const DEST_PHOTOS={
+  'roma':'photo-1552832230-c0197dd311b5','italia':'photo-1515542622106-78bda8ba0e5b',
+  'paris':'photo-1502602898657-3e91760cbb34','francia':'photo-1499856871958-5b9627545d1a',
+  'mallorca':'photo-1504512485720-7d83a16ee930','ibiza':'photo-1555400038-63f5ba517a47',
+  'barcelona':'photo-1539037116277-4db20889f2d4','madrid':'photo-1543783207-ec64e4d95325',
+  'sevilla':'photo-1559561853-08451507cbe7','granada':'photo-1591891937812-0e2c234af4f6',
+  'nueva york':'photo-1534430480872-3498386e7856','eeuu':'photo-1485738422979-f5c462d49f74',
+  'japon':'photo-1528360983277-13d401cdc186','tokio':'photo-1540959733332-eab4deabeeaf',
+  'grecia':'photo-1533105079780-92b9be482077','santorini':'photo-1570077188670-e3a8d69ac5ff',
+  'portugal':'photo-1555881400-74d7acaacd8b','lisboa':'photo-1513735492246-483525079686',
+  'amsterdam':'photo-1534351590666-13e3e96b5017','holanda':'photo-1576924542622-772281b13aa1',
+  'london':'photo-1513635269975-59663e0ac1ad','uk':'photo-1529655683826-aba9b3e77383',
+  'maldivas':'photo-1514282401047-d79a71a590e8','caribe':'photo-1570375820804-9b9caef4f7b1',
+  'tenerife':'photo-1518544866330-95a2ab4b7aa6','canarias':'photo-1587502537104-aac10f5fb6f7',
+  'playa':'photo-1507525428034-b723cf961d3e','beach':'photo-1507525428034-b723cf961d3e',
+  'crucero':'photo-1548574505-5e239809ee19','alemania':'photo-1467269204594-f2a7c81cb2fc',
+  'berlin':'photo-1560969184-10fe8719e047','turquia':'photo-1524231757912-21f4fe3a7200',
+  'marruecos':'photo-1539020140153-e479b8c22e70','marrakech':'photo-1597211684565-dca64d72bdfe',
+  'mexico':'photo-1518638150340-f706e86654de','cancun':'photo-1552074284-5e82b11b1979',
+};
+
+function getTripImgUrl(nombre='',destino=''){
+  const t=(nombre+' '+destino).toLowerCase();
+  for(const[key,id] of Object.entries(DEST_PHOTOS)){
+    if(t.includes(key))return `https://images.unsplash.com/${id}?auto=format&fit=crop&w=600&h=180&q=70`;
+  }
+  return null;
+}
 function renderVList(){
   const entries=Object.entries(viajesData).sort((a,b)=>(b[1].timestamp||0)-(a[1].timestamp||0));
   const el=document.getElementById('viajes-list');
@@ -1705,7 +1894,9 @@ function renderVList(){
       const pct=budget>0?Math.min(100,(spent/budget)*100):0;
       const pax=v.participantes||[];
       const theme=destTheme(v.nombre,v.destino);
+      const imgUrl=getTripImgUrl(v.nombre,v.destino);
       html+=`<div class="trip-card" onclick="openVDetail('${id}')" style="border-left-color:${theme.color}">
+        ${imgUrl?`<div class="trip-card-img"><img src="${imgUrl}" alt="${esc(v.destino||v.nombre||'')}" onerror="this.parentElement.style.display='none'"><div class="trip-card-img-gradient"></div></div>`:''}
         <div class="trip-card-watermark">${theme.flag}</div>
         <div class="trip-card-content">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.3rem">
