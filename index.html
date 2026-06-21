@@ -1688,16 +1688,19 @@ function openDetalle(tipo, id, viajeId){
   document.getElementById('detalle-importe').textContent=fmtEur(g.importe);
   document.getElementById('detalle-cat-label').textContent=cat.label;
 
-  // Miniatura en esquina superior derecha del header — solo foto del lugar
+  // Miniatura en esquina superior derecha del header
+  // - Viajes: foto del lugar (restaurante, actividad...)
+  // - Hogar: foto del ticket si es categoría Restaurante
   const oldThumb=document.getElementById('detalle-thumb');
   if(oldThumb)oldThumb.remove();
-  if(g.foto_lugar_url){
+  const thumbUrl=g.foto_lugar_url||(tipo==='hogar'&&cat.id==='restaurante'?g.foto_url:null);
+  if(thumbUrl){
     const thumb=document.createElement('div');
     thumb.id='detalle-thumb';
     thumb.style.cssText='position:absolute;top:12px;right:48px;cursor:pointer';
-    thumb.innerHTML=`<img src="${g.foto_lugar_url}" onclick="openLb('${g.foto_lugar_url}')"
+    thumb.innerHTML=`<img src="${thumbUrl}" onclick="openLb('${thumbUrl}')"
       style="width:68px;height:68px;object-fit:cover;border-radius:12px;border:2.5px solid rgba(255,255,255,.6);box-shadow:0 3px 12px rgba(0,0,0,.3)">
-      <div style="text-align:center;font-size:.6rem;color:rgba(255,255,255,.7);margin-top:3px;font-weight:700">🖼️ Ver lugar</div>`;
+      <div style="text-align:center;font-size:.6rem;color:rgba(255,255,255,.7);margin-top:3px;font-weight:700">🍽️ Ver foto</div>`;
     hdr.appendChild(thumb);
   }
 
