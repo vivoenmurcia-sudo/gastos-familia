@@ -332,9 +332,11 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 .photo-ph-sub{font-size:.68rem;color:#94a3b8}
 .photo-src-btn{padding:13px 26px;border:2px solid #e2e8f0;border-radius:14px;background:white;cursor:pointer;font-size:.92rem;font-weight:800;color:#475569;transition:all .18s}
 .photo-src-btn:hover{border-color:#3b82f6;color:#1d4ed8;background:#eff6ff}
-.photo-prev{width:100%;max-height:180px;object-fit:cover;border-radius:8px;display:none}
-.photo-size-info{font-size:.72rem;font-weight:700;color:#16a34a;margin-top:6px;display:none}
-.photo-rm{position:absolute;top:8px;right:8px;background:#ef4444;color:white;border:none;border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.8rem;display:none;align-items:center;justify-content:center;z-index:2;font-weight:800}
+.photo-prev{width:72px;height:72px;object-fit:cover;border-radius:10px;display:none;cursor:pointer;border:2px solid #22c55e;flex-shrink:0}
+.photo-zone.has-photo{border-style:solid;border-color:#22c55e;background:#f0fdf4;display:flex;align-items:center;gap:10px;padding:.75rem}
+.photo-zone.has-photo .photo-ph{display:none!important}
+.photo-size-info{font-size:.72rem;font-weight:700;color:#16a34a;display:none;flex:1}
+.photo-rm{position:absolute;top:6px;right:6px;background:#ef4444;color:white;border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:.7rem;display:none;align-items:center;justify-content:center;z-index:2;font-weight:800}
 
 /* UPLOAD PROGRESS */
 .upload-prog{display:none;align-items:center;gap:8px;background:#eff6ff;border-radius:8px;padding:.6rem .9rem;margin-top:.5rem;font-size:.78rem;font-weight:700;color:#1d4ed8}
@@ -908,7 +910,7 @@ async function onPhotoSelect(ev,prefix){
     openModal('modal-crop');
     setTimeout(()=>{
       if(cropperInst){cropperInst.destroy();cropperInst=null;}
-      cropperInst=new Cropper(img,{viewMode:1,autoCropArea:.9,movable:true,zoomable:true,rotatable:true,scalable:true,responsive:true,background:false,guides:true,center:true,highlight:true,cropBoxMovable:true,cropBoxResizable:true});
+      cropperInst=new Cropper(img,{viewMode:1,autoCropArea:.9,movable:true,zoomable:true,rotatable:true,scalable:true,responsive:true,background:false,guides:true,center:true});
     },350);
   };
   reader.readAsDataURL(file);
@@ -930,6 +932,7 @@ async function confirmCrop(){
       r.onload=e=>{
         const prev=document.getElementById(`${cropPrefix}-prev`);
         prev.src=e.target.result;prev.style.display='block';
+        prev.onclick=()=>openLb(e.target.result);
         document.getElementById(`${cropPrefix}-ph`).style.display='none';
         document.getElementById(`${cropPrefix}-rm`).style.display='flex';
         document.getElementById(`${cropPrefix}-pz`).classList.add('has-photo');
@@ -977,10 +980,11 @@ function loadExistingPhoto(prefix,url,path){
   existUrl[prefix]=url;existPath[prefix]=path||null;
   const prev=document.getElementById(`${prefix}-prev`);
   prev.src=url;prev.style.display='block';
+  prev.onclick=()=>openLb(url);
   document.getElementById(`${prefix}-ph`).style.display='none';
   document.getElementById(`${prefix}-rm`).style.display='flex';
   document.getElementById(`${prefix}-pz`).classList.add('has-photo');
-  document.getElementById(`${prefix}-info`).textContent='📎 Ticket guardado';
+  document.getElementById(`${prefix}-info`).textContent='📎 Ticket guardado · toca para ver';
   document.getElementById(`${prefix}-info`).style.display='block';
 }
 // ══ LIGHTBOX CON ZOOM Y PAN ══
