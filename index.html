@@ -549,11 +549,24 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <div class="vdetail-hdr" id="viaje-hdr-card"></div>
         <div class="sub-nav">
           <button class="sub-pill active vp" id="vtab-gastos-btn"  onclick="switchViajeSub('gastos',this)">💳 Gastos</button>
+          <button class="sub-pill vp"        id="vtab-resumen-btn" onclick="switchViajeSub('resumen',this)">📊 Resumen</button>
           <button class="sub-pill vp"        id="vtab-liquid-btn"  onclick="switchViajeSub('liquidacion',this)">⚖️ Liquidación</button>
         </div>
         <div id="vdetalle-gastos">
           <div id="viaje-gastos-list"></div>
           <button class="add-inline-btn" onclick="openGVModal()">📎 Añadir gasto</button>
+        </div>
+        <div id="vdetalle-resumen" style="display:none">
+          <div class="sum-grid" id="v-sum-cards"></div>
+          <div class="card">
+            <div class="card-title">
+              <span>🍩 Por categoría</span>
+              <button class="export-btn" id="v-export-btn" onclick="exportViajeResumen()">📄 Exportar PDF</button>
+            </div>
+            <div class="chart-container"><canvas id="chart-viaje-donut"></canvas></div>
+          </div>
+          <div class="card"><div class="card-title">👥 Por persona</div><div id="v-person-breakdown"></div></div>
+          <div class="card"><div class="card-title">📋 Desglose detallado</div><div id="v-cat-breakdown"></div></div>
         </div>
         <div id="vdetalle-liquidacion" style="display:none"><div id="liquidacion-content"></div></div>
       </div>
@@ -720,7 +733,10 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     <div style="padding:.9rem 1.1rem 1.5rem;overflow-y:auto;max-height:75vh">
       <!-- Mini chart tendencia -->
       <div class="card" style="margin-bottom:.85rem;padding:.85rem">
-        <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">📈 Últimos 6 meses</div>
+        <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">
+          <span>📈 Últimos 6 meses</span>
+          <button class="export-btn" id="catd-export-btn" onclick="exportCategoriaPDF()">📄 PDF</button>
+        </div>
         <div style="height:100px;position:relative"><canvas id="catd-chart"></canvas></div>
       </div>
       <!-- Lista gastos -->
@@ -1175,8 +1191,12 @@ function openVDetail(id){
   currentViaje=id;
   document.getElementById('viajes-lista').style.display='none';document.getElementById('viaje-detalle').style.display='block';
   viajeSub='gastos';
-  document.getElementById('vtab-gastos-btn').classList.add('active');document.getElementById('vtab-liquid-btn').classList.remove('active');
-  document.getElementById('vdetalle-gastos').style.display='';document.getElementById('vdetalle-liquidacion').style.display='none';
+  document.getElementById('vtab-gastos-btn').classList.add('active');
+  document.getElementById('vtab-resumen-btn').classList.remove('active');
+  document.getElementById('vtab-liquid-btn').classList.remove('active');
+  document.getElementById('vdetalle-gastos').style.display='';
+  document.getElementById('vdetalle-resumen').style.display='none';
+  document.getElementById('vdetalle-liquidacion').style.display='none';
   renderVDetail(id);updateFab();
 }
 function showVList(){currentViaje=null;document.getElementById('viajes-lista').style.display='block';document.getElementById('viaje-detalle').style.display='none';updateFab();}
@@ -1184,7 +1204,9 @@ function switchViajeSub(sub,btn){
   viajeSub=sub;
   document.querySelectorAll('#viaje-detalle .sub-pill').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');
   document.getElementById('vdetalle-gastos').style.display=sub==='gastos'?'':'none';
+  document.getElementById('vdetalle-resumen').style.display=sub==='resumen'?'':'none';
   document.getElementById('vdetalle-liquidacion').style.display=sub==='liquidacion'?'':'none';
+  if(sub==='resumen')renderViajeResumen(currentViaje);
   if(sub==='liquidacion')renderLiquidacion(currentViaje);
   updateFab();
 }
@@ -1286,7 +1308,8 @@ function renderHGastos(){
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
         <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
-
+        <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
+        ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?'<span class="photo-badge">📸</span>':''}
           ${g.recurrente?'<span class="rec-badge">🔄</span>':''}
@@ -1871,6 +1894,72 @@ function getTripImgUrl(nombre='',destino=''){
   }
   return null;
 }
+// ══ VIAJE RESUMEN ══
+let chartViajeDonut=null;
+function renderViajeResumen(id){
+  const v=viajesData[id];if(!v)return;
+  const gastos=Object.values(v.gastos||{});
+  const total=gastos.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const budget=parseFloat(v.presupuesto||0);
+  const pax=v.participantes||[];
+  document.getElementById('v-sum-cards').innerHTML=`
+    <div class="sum-card"><div class="sum-card-icon">💰</div><div class="sum-card-val">${fmtEur(total)}</div><div class="sum-card-lbl">Total gastado</div></div>
+    <div class="sum-card"><div class="sum-card-icon">🧾</div><div class="sum-card-val">${gastos.length}</div><div class="sum-card-lbl">Operaciones</div></div>
+    ${budget>0
+      ?`<div class="sum-card"><div class="sum-card-icon">📊</div><div class="sum-card-val">${Math.round((total/budget)*100)}%</div><div class="sum-card-lbl">Del presupuesto</div></div>
+        <div class="sum-card"><div class="sum-card-icon">💶</div><div class="sum-card-val">${fmtEur(Math.abs(budget-total))}</div><div class="sum-card-lbl">${budget>total?'Disponible':'Excedido'}</div></div>`
+      :`<div class="sum-card"><div class="sum-card-icon">👥</div><div class="sum-card-val">${pax.length}</div><div class="sum-card-lbl">Participantes</div></div>
+        <div class="sum-card"><div class="sum-card-icon">💵</div><div class="sum-card-val">${fmtEur(pax.length>0?total/pax.length:0)}</div><div class="sum-card-lbl">Por persona</div></div>`}`;
+  if(chartViajeDonut){chartViajeDonut.destroy();chartViajeDonut=null;}
+  const catData=CAT_VIAJE.map(c=>({...c,spent:gastos.filter(g=>g.categoria===c.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent);
+  if(catData.length){chartViajeDonut=new Chart(document.getElementById('chart-viaje-donut').getContext('2d'),{type:'doughnut',data:{labels:catData.map(c=>c.label),datasets:[{data:catData.map(c=>c.spent),backgroundColor:catData.map(c=>c.color),borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11,weight:'bold'},padding:10,boxWidth:12}}}}});}
+  const personData=pax.map(pid=>{const p=FAMILY.find(f=>f.id===pid);const pg=gastos.filter(g=>g.quien_pago===pid);return{...p,total:pg.reduce((s,g)=>s+parseFloat(g.importe||0),0),count:pg.length};}).filter(p=>p.total>0).sort((a,b)=>b.total-a.total);
+  document.getElementById('v-person-breakdown').innerHTML=personData.length?personData.map(f=>`<div class="person-row"><div class="person-row-left"><div class="user-avatar ${f.avClass}" style="width:34px;height:34px;font-size:11px">${f.letter}</div><div><div style="font-size:.85rem;font-weight:800">${f.name}</div><div style="font-size:.68rem;color:#94a3b8">${f.count} gasto${f.count!==1?'s':''} · ${total>0?Math.round((f.total/total)*100):0}%</div></div></div><div style="font-size:.95rem;font-weight:900">${fmtEur(f.total)}</div></div><div class="divider"></div>`).join(''):'<div class="empty" style="padding:1rem"><div class="et">Sin gastos registrados</div></div>';
+  document.getElementById('v-cat-breakdown').innerHTML=catData.map(c=>{const pct=total>0?Math.round((c.spent/total)*100):0;return`<div class="cat-row"><div class="cat-rh"><div class="cat-rl"><div class="cat-icon-sm" style="background:${c.color}20">${c.icon}</div>${c.label}</div><div style="font-size:.88rem;font-weight:900">${fmtEur(c.spent)}</div></div><div class="bbar-wrap"><div class="bbar ok" style="width:${pct}%;background:${c.color}"></div></div><div class="cat-sub">${pct}% del total</div></div>`;}).join('');
+}
+
+function exportViajeResumen(){
+  const v=viajesData[currentViaje];if(!v)return;
+  const gastos=Object.values(v.gastos||{}).sort((a,b)=>(a.fecha||'')>(b.fecha||'')?1:-1);
+  const total=gastos.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const budget=parseFloat(v.presupuesto||0);
+  const pax=v.participantes||[];
+  const catData=CAT_VIAJE.map(c=>({...c,spent:gastos.filter(g=>g.categoria===c.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent);
+  const personData=pax.map(pid=>{const p=FAMILY.find(f=>f.id===pid);const pg=gastos.filter(g=>g.quien_pago===pid);return{...p,total:pg.reduce((s,g)=>s+parseFloat(g.importe||0),0),count:pg.length};}).filter(p=>p.total>0).sort((a,b)=>b.total-a.total);
+  const rowsHtml=gastos.map(g=>{const cat=getCat(CAT_VIAJE,g.categoria);const quien=FAMILY.find(f=>f.id===g.quien_pago)?.name||'?';return'<tr><td>'+fmtDate(g.fecha)+'</td><td>'+cat.icon+' '+cat.label+'</td><td>'+esc(g.descripcion||'—')+'</td><td>'+quien+'</td><td class="num">'+fmtEur(g.importe)+'</td></tr>';}).join('');
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'+esc(v.nombre||'Viaje')+'</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;color:#0f172a;padding:2rem;max-width:800px;margin:0 auto;font-size:14px}h1{font-size:1.6rem;font-weight:900;margin-bottom:.2rem}.sub{color:#64748b;font-size:.85rem;margin-bottom:1.5rem}.pb{padding:10px 20px;background:#ea580c;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-bottom:1.5rem}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:1.5rem}.box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.75rem;text-align:center}.box .v{font-size:1.2rem;font-weight:900}.box .l{font-size:.65rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-top:3px}h2{font-size:.9rem;font-weight:800;padding:.5rem .75rem;background:#fff7ed;border-radius:8px;margin-bottom:.75rem;margin-top:1.25rem;color:#c2410c}table{width:100%;border-collapse:collapse}th{background:#fff7ed;padding:.55rem .75rem;text-align:left;font-size:.7rem;text-transform:uppercase;color:#c2410c}td{padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;font-size:.83rem}.num{text-align:right;font-weight:700}.tr{background:#f8fafc;font-weight:900}.tr td{padding:.65rem .75rem}.cr{display:flex;justify-content:space-between;padding:.35rem 0;border-bottom:1px solid #f8fafc;font-size:.85rem}@media print{.pb{display:none}}</style></head><body>'
+  +'<button class="pb" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+  +'<h1>✈️ '+esc(v.nombre||'Viaje')+'</h1>'
+  +'<div class="sub">📍 '+esc(v.destino||'')+(v.fecha_inicio?' · '+fmtDate(v.fecha_inicio)+' — '+fmtDate(v.fecha_fin):'')+'</div>'
+  +'<div class="grid"><div class="box"><div class="v">'+fmtEur(total)+'</div><div class="l">Total</div></div><div class="box"><div class="v">'+gastos.length+'</div><div class="l">Gastos</div></div>'
+  +(budget>0?'<div class="box"><div class="v">'+Math.round((total/budget)*100)+'%</div><div class="l">Presupuesto</div></div><div class="box"><div class="v">'+fmtEur(budget)+'</div><div class="l">Límite</div></div>'
+  :'<div class="box"><div class="v">'+pax.length+'</div><div class="l">Personas</div></div><div class="box"><div class="v">'+fmtEur(pax.length>0?total/pax.length:0)+'</div><div class="l">Por persona</div></div>')+'</div>'
+  +'<h2>👥 Por persona</h2>'+personData.map(f=>'<div class="cr"><span><b>'+f.name+'</b></span><b>'+fmtEur(f.total)+'</b></div>').join('')
+  +'<h2>📊 Por categoría</h2>'+catData.map(c=>'<div class="cr"><span>'+c.icon+' '+c.label+'</span><b>'+fmtEur(c.spent)+'</b></div>').join('')
+  +'<h2>📋 Detalle de gastos</h2><table><thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Quién pagó</th><th>Importe</th></tr></thead><tbody>'+rowsHtml+'</tbody><tfoot><tr class="tr"><td colspan="4">TOTAL</td><td class="num">'+fmtEur(total)+'</td></tr></tfoot></table>'
+  +'<div style="text-align:center;margin-top:2rem;color:#94a3b8;font-size:.75rem">💰 Gastos Familia · '+esc(v.nombre||'Viaje')+'</div></body></html>');
+  w.document.close();
+}
+
+let currentCatId=null;
+function exportCategoriaPDF(){
+  if(!currentCatId)return;
+  const cat=getCatAll(currentCatId);
+  const entries=Object.values(hogarData).filter(g=>g.categoria===currentCatId).sort((a,b)=>(a.fecha||'')>(b.fecha||'')?1:-1);
+  const total=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'+cat.icon+' '+cat.label+'</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;color:#0f172a;padding:2rem;max-width:800px;margin:0 auto;font-size:14px}h1{font-size:1.6rem;font-weight:900;margin-bottom:.25rem}.sub{color:#64748b;font-size:.85rem;margin-bottom:1.5rem}.pb{padding:10px 20px;background:'+cat.color+';color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-bottom:1.5rem}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;padding:.55rem .75rem;text-align:left;font-size:.7rem;text-transform:uppercase;color:#64748b}td{padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;font-size:.83rem}.num{text-align:right;font-weight:700}.tr{background:#f8fafc;font-weight:900}.tr td{padding:.65rem .75rem}@media print{.pb{display:none}}</style></head><body>'
+  +'<button class="pb" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+  +'<h1>'+cat.icon+' '+cat.label+'</h1>'
+  +'<div class="sub">'+fmtMon(get_currentMonth())+' · '+entries.length+' operaciones · Total: '+fmtEur(total)+'</div>'
+  +'<table><thead><tr><th>Fecha</th><th>Descripción</th><th>Quién</th><th>Importe</th></tr></thead><tbody>'
+  +entries.map(g=>'<tr><td>'+fmtDate(g.fecha)+'</td><td>'+esc(g.descripcion||'—')+'</td><td>'+(FAMILY.find(f=>f.id===g.quien)?.name||'?')+'</td><td class="num">'+fmtEur(g.importe)+'</td></tr>').join('')
+  +'</tbody><tfoot><tr class="tr"><td colspan="3">TOTAL '+cat.label.toUpperCase()+'</td><td class="num">'+fmtEur(total)+'</td></tr></tfoot></table>'
+  +'</body></html>');
+  w.document.close();
+}
+
 function renderVList(){
   const entries=Object.entries(viajesData).sort((a,b)=>(b[1].timestamp||0)-(a[1].timestamp||0));
   const el=document.getElementById('viajes-list');
@@ -1963,7 +2052,8 @@ function renderVGastos(id){
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
         <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
-
+        <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
+        ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>Paga: ${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?'<span class="photo-badge">📸</span>':''}
         </div>
@@ -2157,6 +2247,7 @@ document.querySelectorAll('.modal-ov').forEach(ov=>ov.addEventListener('click',e
 // ══ DETALLE CATEGORÍA ══
 let chartCatD=null;
 async function openCatDetalle(catId){
+  currentCatId=catId;
   const cat=getCatAll(catId);
   const entries=Object.values(hogarData).filter(g=>g.categoria===catId).sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1);
   const total=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
