@@ -1286,7 +1286,7 @@ function renderHGastos(){
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
         <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
-        ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
+
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?'<span class="photo-badge">📸</span>':''}
           ${g.recurrente?'<span class="rec-badge">🔄</span>':''}
@@ -1964,7 +1964,7 @@ function renderVGastos(id){
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
         <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
-        ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
+
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>Paga: ${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?'<span class="photo-badge">📸</span>':''}
         </div>
@@ -2181,7 +2181,7 @@ async function openCatDetalle(catId){
         <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
         <div class="gasto-body">
           <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
-          ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
+
           <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}${g.foto_url?'<span class="photo-badge">📸</span>':''}</div>
         </div>
         <div class="gasto-right">
