@@ -158,7 +158,7 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .budget-warn.near{background:#fffbeb;color:#d97706;border:1px solid #fed7aa}
 
 /* FAB */
-.fab{position:fixed;bottom:74px;right:16px;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;color:white;font-size:1.7rem;display:none;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.25);transition:all .2s;z-index:90;line-height:1}
+.fab{position:fixed;bottom:20px;right:16px;width:56px;height:56px;border-radius:50%;border:none;cursor:pointer;color:white;font-size:1.7rem;display:none;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.3);transition:transform .2s;z-index:900;line-height:1;isolation:isolate}
 .fab.h{background:linear-gradient(135deg,#2563eb,#1d4ed8)}.fab.v{background:linear-gradient(135deg,#ea580c,#c2410c)}
 .fab:hover{transform:scale(1.08)}.fab:active{transform:scale(.95)}
 
@@ -373,10 +373,10 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 .export-btn:hover{border-color:#3b82f6;color:#3b82f6}
 
 /* SEARCH + FILTER BAR */
-.search-bar{display:flex;align-items:center;gap:8px;margin-bottom:.75rem}
-.search-input{flex:1;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 13px 9px 36px;font-size:.85rem;font-family:inherit;color:#0f172a;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 10px center;transition:border-color .18s}
+.search-bar{display:flex;align-items:center;gap:6px;margin-bottom:.75rem;overflow:hidden}
+.search-input{flex:1;min-width:0;border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 10px 9px 32px;font-size:.85rem;font-family:inherit;color:#0f172a;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 9px center;transition:border-color .18s}
 .search-input:focus{outline:none;border-color:#3b82f6}
-.sort-select{border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 10px;font-size:.78rem;font-family:inherit;color:#475569;background:white;cursor:pointer;flex-shrink:0}
+.sort-select{border:1.5px solid #e2e8f0;border-radius:10px;padding:9px 6px;font-size:.72rem;font-family:inherit;color:#475569;background:white;cursor:pointer;flex-shrink:0;max-width:110px}
 .sort-select:focus{outline:none;border-color:#3b82f6}
 
 /* PERSON FILTER PILLS */
@@ -397,10 +397,9 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 .hero-person-av{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:white;flex-shrink:0}
 
 /* TRIP CARD IMAGE */
-.trip-card-img{position:absolute;inset:0;border-radius:16px;overflow:hidden;z-index:0}
-.trip-card-img img{width:100%;height:100%;object-fit:cover;opacity:.12;filter:saturate(1.2)}
-.trip-card-img-gradient{position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.95) 0%,rgba(255,255,255,.85) 100%)}
-.trip-card{position:relative}
+.trip-card-img{position:absolute;inset:0;border-radius:14px;overflow:hidden;z-index:0;pointer-events:none}
+.trip-card-img img{width:100%;height:100%;object-fit:cover;opacity:.1;filter:saturate(1.3)}
+.trip-card-img-gradient{position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.97) 0%,rgba(255,255,255,.88) 100%)}
 .person-row{display:flex;align-items:center;justify-content:space-between;padding:.65rem 0;cursor:pointer;transition:background .15s;border-radius:8px}
 .person-row:hover{background:#f8fafc}
 .person-row-left{display:flex;align-items:center;gap:10px}
@@ -1265,7 +1264,10 @@ function renderHGastos(){
   });
 
   if(!entries.length&&!viajesHtml){
-    el.innerHTML=`<div class="empty"><div class="ei">🧾</div><div class="et">Sin gastos este mes</div><div class="es">Pulsa + para añadir el primero</div></div>`;
+    const search=document.getElementById('gastos-search')?.value||'';
+    el.innerHTML=search
+      ?`<div class="empty"><div class="ei">🔍</div><div class="et">Sin resultados para "${esc(search)}"</div><div class="es">Prueba con otra descripción o categoría</div></div>`
+      :`<div class="empty"><div class="ei">🧾</div><div class="et">Sin gastos este mes</div><div class="es">Pulsa + para añadir el primero</div></div>`;
     return;
   }
 
@@ -1356,18 +1358,23 @@ function setPersonFilter(id){
 
 function filterGastos(){renderHGastos();}
 
+function normalizeText(s){return(s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+
 function getFilteredSortedEntries(){
-  const search=(document.getElementById('gastos-search')?.value||'').toLowerCase();
+  const search=normalizeText(document.getElementById('gastos-search')?.value||'').trim();
   const sort=document.getElementById('gastos-sort')?.value||'fecha-desc';
   let entries=Object.entries(hogarData);
-  // Filter by person
   if(activePersonFilter)entries=entries.filter(([,g])=>g.quien===activePersonFilter);
-  // Filter by search
-  if(search)entries=entries.filter(([,g])=>{
-    const cat=getCatAll(g.categoria);
-    return(g.descripcion||'').toLowerCase().includes(search)||(g.nota||'').toLowerCase().includes(search)||cat.label.toLowerCase().includes(search);
-  });
-  // Sort
+  if(search){
+    entries=entries.filter(([,g])=>{
+      const cat=getCatAll(g.categoria);
+      return normalizeText(g.descripcion).includes(search)
+        ||normalizeText(g.nota).includes(search)
+        ||normalizeText(cat.label).includes(search)
+        ||normalizeText(cat.id).includes(search)
+        ||normalizeText(FAMILY.find(f=>f.id===g.quien)?.name||'').includes(search);
+    });
+  }
   entries.sort((a,b)=>{
     if(sort==='fecha-desc')return(b[1].fecha||'')>(a[1].fecha||'')?1:-1;
     if(sort==='fecha-asc') return(a[1].fecha||'')>(b[1].fecha||'')?1:-1;
