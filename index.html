@@ -745,6 +745,27 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
   </div>
 </div>
 
+<!-- MODAL DETALLE CATEGORÍA VIAJE -->
+<div class="modal-ov" id="modal-vcat-detalle">
+  <div class="modal-box" style="padding:0;overflow:hidden">
+    <div id="vcatd-header" style="padding:1.25rem 1.25rem .9rem;color:white;position:relative">
+      <button onclick="closeModal('modal-vcat-detalle')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.2);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center">✕</button>
+      <div id="vcatd-icon" style="font-size:2rem;margin-bottom:4px"></div>
+      <div id="vcatd-title" style="font-size:1.1rem;font-weight:900"></div>
+      <div id="vcatd-sub" style="font-size:.75rem;opacity:.75;margin-top:3px"></div>
+    </div>
+    <div style="padding:.9rem 1.1rem 1.5rem;overflow-y:auto;max-height:75vh">
+      <div class="card" style="margin-bottom:.85rem;padding:.85rem">
+        <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">
+          <span>📋 Gastos de esta categoría</span>
+          <button class="export-btn" onclick="exportViajeCatPDF()">📄 PDF</button>
+        </div>
+        <div id="vcatd-lista"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL RECORTE -->
 <div class="modal-ov" id="modal-crop">
   <div class="modal-box" style="padding-bottom:1.5rem">
@@ -1914,7 +1935,14 @@ function renderViajeResumen(id){
   if(catData.length){chartViajeDonut=new Chart(document.getElementById('chart-viaje-donut').getContext('2d'),{type:'doughnut',data:{labels:catData.map(c=>c.label),datasets:[{data:catData.map(c=>c.spent),backgroundColor:catData.map(c=>c.color),borderWidth:2,borderColor:'#fff',hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11,weight:'bold'},padding:10,boxWidth:12}}}}});}
   const personData=pax.map(pid=>{const p=FAMILY.find(f=>f.id===pid);const pg=gastos.filter(g=>g.quien_pago===pid);return{...p,total:pg.reduce((s,g)=>s+parseFloat(g.importe||0),0),count:pg.length};}).filter(p=>p.total>0).sort((a,b)=>b.total-a.total);
   document.getElementById('v-person-breakdown').innerHTML=personData.length?personData.map(f=>`<div class="person-row"><div class="person-row-left"><div class="user-avatar ${f.avClass}" style="width:34px;height:34px;font-size:11px">${f.letter}</div><div><div style="font-size:.85rem;font-weight:800">${f.name}</div><div style="font-size:.68rem;color:#94a3b8">${f.count} gasto${f.count!==1?'s':''} · ${total>0?Math.round((f.total/total)*100):0}%</div></div></div><div style="font-size:.95rem;font-weight:900">${fmtEur(f.total)}</div></div><div class="divider"></div>`).join(''):'<div class="empty" style="padding:1rem"><div class="et">Sin gastos registrados</div></div>';
-  document.getElementById('v-cat-breakdown').innerHTML=catData.map(c=>{const pct=total>0?Math.round((c.spent/total)*100):0;return`<div class="cat-row"><div class="cat-rh"><div class="cat-rl"><div class="cat-icon-sm" style="background:${c.color}20">${c.icon}</div>${c.label}</div><div style="font-size:.88rem;font-weight:900">${fmtEur(c.spent)}</div></div><div class="bbar-wrap"><div class="bbar ok" style="width:${pct}%;background:${c.color}"></div></div><div class="cat-sub">${pct}% del total</div></div>`;}).join('');
+  document.getElementById('v-cat-breakdown').innerHTML=catData.map(c=>{const pct=total>0?Math.round((c.spent/total)*100):0;return`<div class="cat-row" onclick="openViajeCatDetalle('${id}','${c.id}')" style="cursor:pointer;border-radius:8px;padding:.65rem .5rem;transition:background .15s">
+      <div class="cat-rh">
+        <div class="cat-rl"><div class="cat-icon-sm" style="background:${c.color}20">${c.icon}</div>${c.label}</div>
+        <div style="display:flex;align-items:center;gap:6px"><div style="font-size:.88rem;font-weight:900">${fmtEur(c.spent)}</div><span style="font-size:.7rem;color:#94a3b8">›</span></div>
+      </div>
+      <div class="bbar-wrap"><div class="bbar ok" style="width:${pct}%;background:${c.color}"></div></div>
+      <div class="cat-sub">${pct}% del total · Toca para ver detalle</div>
+    </div>`;}).join('');
 }
 
 function exportViajeResumen(){
@@ -1941,7 +1969,61 @@ function exportViajeResumen(){
   w.document.close();
 }
 
-let currentCatId=null;
+let currentVCatId=null,currentVCatViajeId=null;
+
+function openViajeCatDetalle(viajeId,catId){
+  currentVCatId=catId;currentVCatViajeId=viajeId;
+  const v=viajesData[viajeId];if(!v)return;
+  const cat=getCat(CAT_VIAJE,catId);
+  const gastos=Object.values(v.gastos||{}).filter(g=>g.categoria===catId).sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1);
+  const total=gastos.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+
+  const hdr=document.getElementById('vcatd-header');
+  hdr.style.background=`linear-gradient(135deg,${cat.color}dd,${cat.color}88)`;
+  document.getElementById('vcatd-icon').textContent=cat.icon;
+  document.getElementById('vcatd-title').textContent=cat.label;
+  document.getElementById('vcatd-sub').textContent=`${esc(v.nombre||'Viaje')} · ${gastos.length} gasto${gastos.length!==1?'s':''} · ${fmtEur(total)}`;
+
+  document.getElementById('vcatd-lista').innerHTML=gastos.length
+    ?'<div class="gasto-list">'+gastos.map(g=>{
+        const quien=FAMILY.find(f=>f.id===g.quien_pago)?.name||'?';
+        return`<div class="gasto-item">
+          <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
+          <div class="gasto-body">
+            <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
+            <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}</div>
+          </div>
+          <div class="gasto-right"><div class="gasto-importe">${fmtEur(g.importe)}</div></div>
+        </div>`;
+      }).join('')+'</div>'
+    :`<div class="empty" style="padding:1.5rem"><div class="ei">${cat.icon}</div><div class="et">Sin gastos en esta categoría</div></div>`;
+
+  openModal('modal-vcat-detalle');
+}
+
+function exportViajeCatPDF(){
+  if(!currentVCatId||!currentVCatViajeId)return;
+  const v=viajesData[currentVCatViajeId];if(!v)return;
+  const cat=getCat(CAT_VIAJE,currentVCatId);
+  const gastos=Object.values(v.gastos||{}).filter(g=>g.categoria===currentVCatId).sort((a,b)=>(a.fecha||'')>(b.fecha||'')?1:-1);
+  const total=gastos.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'+cat.icon+' '+cat.label+' · '+esc(v.nombre||'Viaje')+'</title>'
+  +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;color:#0f172a;padding:2rem;max-width:800px;margin:0 auto;font-size:14px}'
+  +'h1{font-size:1.6rem;font-weight:900;margin-bottom:.2rem}.sub{color:#64748b;font-size:.85rem;margin-bottom:1.5rem}'
+  +'.pb{padding:10px 20px;background:'+cat.color+';color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-bottom:1.5rem}'
+  +'table{width:100%;border-collapse:collapse}th{background:#f1f5f9;padding:.55rem .75rem;text-align:left;font-size:.7rem;text-transform:uppercase;color:#64748b}'
+  +'td{padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;font-size:.83rem}.num{text-align:right;font-weight:700}'
+  +'.tr{background:#f8fafc;font-weight:900}.tr td{padding:.65rem .75rem}@media print{.pb{display:none}}</style></head><body>'
+  +'<button class="pb" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+  +'<h1>'+cat.icon+' '+cat.label+'</h1>'
+  +'<div class="sub">✈️ '+esc(v.nombre||'')+(v.destino?' · 📍'+esc(v.destino):'')+(v.fecha_inicio?' · '+fmtDate(v.fecha_inicio)+' — '+fmtDate(v.fecha_fin):'')+'</div>'
+  +'<table><thead><tr><th>Fecha</th><th>Descripción</th><th>Quién pagó</th><th>Importe</th></tr></thead><tbody>'
+  +gastos.map(g=>'<tr><td>'+fmtDate(g.fecha)+'</td><td>'+esc(g.descripcion||'—')+'</td><td>'+(FAMILY.find(f=>f.id===g.quien_pago)?.name||'?')+'</td><td class="num">'+fmtEur(g.importe)+'</td></tr>').join('')
+  +'</tbody><tfoot><tr class="tr"><td colspan="3">TOTAL '+cat.label.toUpperCase()+'</td><td class="num">'+fmtEur(total)+'</td></tr></tfoot></table>'
+  +'</body></html>');
+  w.document.close();
+}
 function exportCategoriaPDF(){
   if(!currentCatId)return;
   const cat=getCatAll(currentCatId);
