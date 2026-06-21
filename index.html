@@ -778,9 +778,12 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     <!-- Contenido -->
     <div style="padding:1.1rem 1.25rem 1.5rem">
       <div id="detalle-body"></div>
-      <div id="detalle-foto" style="margin-top:.85rem;display:none">
-        <img id="detalle-foto-img" style="width:100%;max-height:200px;object-fit:cover;border-radius:12px;cursor:pointer" onclick="" alt="ticket">
-        <div style="font-size:.7rem;color:#94a3b8;margin-top:5px;text-align:center">📸 Toca para ampliar</div>
+      <div id="detalle-foto" style="margin-top:.85rem;display:none;border:0.5px solid #e2e8f0;border-radius:12px;overflow:hidden">
+        <div style="background:#f8fafc;padding:.45rem .75rem;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:.72rem;font-weight:700;color:#64748b">📸 Ticket</span>
+          <span style="font-size:.65rem;color:#94a3b8">Toca para ampliar</span>
+        </div>
+        <img id="detalle-foto-img" style="width:100%;max-height:180px;object-fit:cover;cursor:pointer;display:block" onclick="" alt="ticket">
       </div>
       <div id="detalle-btns" style="display:flex;gap:8px;margin-top:1rem"></div>
     </div>
@@ -2322,8 +2325,6 @@ function renderVGastos(id){
       <div class="gasto-right" onclick="stopProp(event)">
         <div class="gasto-importe">${fmtEur(g.importe)}</div>
         ${canEdit?`<div class="gasto-btns">
-          ${g.foto_url?`<button class="iBtn ph" onclick="openLb('${g.foto_url}')">📸</button>`:''}
-          ${g.foto_lugar_url?`<button class="iBtn ph" style="background:#fdf4ff;color:#9333ea" onclick="openLb('${g.foto_lugar_url}')">🖼️</button>`:''}
           <button class="iBtn ed" onclick="openGVModal('${gid}')">✏️</button>
           <button class="iBtn dl" onclick="delGV('${gid}','${g.foto_path||''}','${g.foto_lugar_path||''}')">🗑️</button>
         </div>`:''}
