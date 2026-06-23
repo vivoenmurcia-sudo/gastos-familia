@@ -409,8 +409,8 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 
 /* TRIP CARD IMAGE */
 .trip-card-img{position:absolute;inset:0;border-radius:14px;overflow:hidden;z-index:0;pointer-events:none}
-.trip-card-img img{width:100%;height:100%;object-fit:cover;opacity:.1;filter:saturate(1.3)}
-.trip-card-img-gradient{position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.97) 0%,rgba(255,255,255,.88) 100%)}
+.trip-card-img img{width:100%;height:100%;object-fit:cover;opacity:.18;filter:saturate(1.4)}
+.trip-card-img-gradient{position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.93) 0%,rgba(255,255,255,.75) 100%)}
 .person-row{display:flex;align-items:center;justify-content:space-between;padding:.65rem 0;cursor:pointer;transition:background .15s;border-radius:8px}
 .person-row:hover{background:#f8fafc}
 .person-row-left{display:flex;align-items:center;gap:10px}
@@ -2244,7 +2244,7 @@ function renderVList(){
       const pct=budget>0?Math.min(100,(spent/budget)*100):0;
       const pax=v.participantes||[];
       const theme=destTheme(v.nombre,v.destino);
-      const imgUrl=getTripImgUrl(v.nombre,v.destino);
+      const imgUrl=v.foto_portada_url||getTripImgUrl(v.nombre,v.destino);
       html+=`<div class="trip-card" onclick="openVDetail('${id}')" style="border-left-color:${theme.color}">
         ${imgUrl?`<div class="trip-card-img"><img src="${imgUrl}" alt="${esc(v.destino||v.nombre||'')}" onerror="this.parentElement.style.display='none'"><div class="trip-card-img-gradient"></div></div>`:''}
         <div class="trip-card-watermark">${theme.flag}</div>
