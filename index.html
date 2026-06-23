@@ -247,7 +247,7 @@ body{background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .year-group-count{font-size:.7rem;color:#94a3b8;font-weight:700;background:#f1f5f9;padding:2px 8px;border-radius:20px}
 
 /* VIAJE DETAIL */
-.vdetail-hdr{background:linear-gradient(135deg,#7c2d12,#c2410c);border-radius:16px;padding:1.2rem;margin-bottom:.85rem;color:white}
+.vdetail-hdr{border-radius:16px;margin-bottom:.85rem;color:white;overflow:hidden;position:relative}
 .vback-btn{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.15);border:none;cursor:pointer;color:white;font-size:.78rem;font-weight:700;margin-bottom:.75rem;padding:5px 12px;border-radius:20px;width:fit-content;transition:background .2s}
 .vback-btn:hover{background:rgba(255,255,255,.25)}
 .vdetail-name{font-size:1.15rem;font-weight:900;margin-bottom:2px}
@@ -2261,26 +2261,31 @@ function renderVDetail(id){
   const pct=budget>0?Math.min(100,(spent/budget)*100):0;
   const isAdmin=currentRole==='admin';
   const theme=destTheme(v.nombre,v.destino);
-  document.getElementById('viaje-hdr-card').innerHTML=`
-    <button class="vback-btn" onclick="showVList()">← Volver</button>
-    <div style="display:flex;align-items:flex-start;justify-content:space-between">
-      <div>
-        <div class="vdetail-name">${theme.flag} ${esc(v.nombre||'Viaje')}</div>
-        <div class="vdetail-dest">📍 ${esc(v.destino||'')} &nbsp;<span class="trip-badge ${stC[st]}">${stL[st]}</span></div>
+  const imgUrl=getTripImgUrl(v.nombre,v.destino);
+  const hdrEl=document.getElementById('viaje-hdr-card');
+  hdrEl.style.background=`linear-gradient(135deg,${theme.color}ee,${theme.color}99)`;
+  hdrEl.innerHTML=`
+    ${imgUrl?`<img src="${imgUrl}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.22;filter:saturate(1.4);border-radius:16px" onerror="this.style.display='none'">`:''}
+    <div style="position:relative;z-index:1;padding:1.2rem">
+      <button class="vback-btn" onclick="showVList()">← Volver</button>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <div class="vdetail-name">${theme.flag} ${esc(v.nombre||'Viaje')}</div>
+          <div class="vdetail-dest">📍 ${esc(v.destino||'')} &nbsp;<span class="trip-badge ${stC[st]}">${stL[st]}</span></div>
+        </div>
+        ${isAdmin?`<div style="display:flex;gap:4px">
+          <button class="iBtn ed" style="background:rgba(255,255,255,.2);color:white" onclick="openViajeModal('${id}');event.stopPropagation()">✏️</button>
+          <button class="iBtn dl" style="background:rgba(255,255,255,.2);color:white" onclick="delViaje('${id}');event.stopPropagation()">🗑️</button>
+        </div>`:''}
       </div>
-      ${isAdmin?`<div style="display:flex;gap:4px">
-        <button class="iBtn ed" style="background:rgba(255,255,255,.2);color:white" onclick="openViajeModal('${id}');event.stopPropagation()">✏️</button>
-        <button class="iBtn dl" style="background:rgba(255,255,255,.2);color:white" onclick="delViaje('${id}');event.stopPropagation()">🗑️</button>
-      </div>`:''}
-    </div>
-    <div class="vchips" style="margin-top:.6rem">
-      <span class="vchip">📅 ${fmtDate(v.fecha_inicio)||'—'} — ${fmtDate(v.fecha_fin)||'—'}</span>
-      ${budget>0?`<span class="vchip">💶 ${fmtEur(budget)}</span>`:''}
-      <span class="vchip">💳 ${fmtEur(spent)}</span>
-    </div>
-    ${budget>0?`<div class="vp-row"><span>${Math.round(pct)}% del presupuesto</span><span class="vp-spent">${fmtEur(spent)} / ${fmtEur(budget)}</span></div>
-    <div class="tbar-wrap"><div class="tbar${pct>=100?' over':''}" style="width:${pct}%"></div></div>`:''}`;
-  renderVGastos(id);
+      <div class="vchips" style="margin-top:.6rem">
+        <span class="vchip">📅 ${fmtDate(v.fecha_inicio)||'—'} — ${fmtDate(v.fecha_fin)||'—'}</span>
+        ${budget>0?`<span class="vchip">💶 ${fmtEur(budget)}</span>`:''}
+        <span class="vchip">💳 ${fmtEur(spent)}</span>
+      </div>
+      ${budget>0?`<div class="vp-row"><span>${Math.round(pct)}% del presupuesto</span><span class="vp-spent">${fmtEur(spent)} / ${fmtEur(budget)}</span></div>
+      <div class="tbar-wrap"><div class="tbar${pct>=100?' over':''}" style="width:${pct}%"></div></div>`:''}
+    </div>`;  renderVGastos(id);
   if(viajeSub==='liquidacion')renderLiquidacion(id);
 }
 
