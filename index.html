@@ -719,15 +719,15 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <button class="photo-rm" id="gv-rm" onclick="rmPhoto('gv');event.stopPropagation()">✕</button>
       </div>
     </div>
-    <!-- Foto del lugar — solo para Comidas y Actividades -->
+    <!-- Foto del lugar — solo para Comidas y Actividades (igual que hogar-restaurante) -->
     <div class="fg" id="gv-lugar-section" style="display:none">
-      <label class="flabel">🖼️ Foto del lugar <span style="color:#cbd5e1;font-weight:400">(restaurante, actividad...)</span></label>
+      <label class="flabel">🍽️ Foto del lugar <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span></label>
       <div class="photo-zone" id="gvl-pz">
         <input type="file" id="gvl-pi-gallery" accept="image/*" onchange="onPhotoSelect(event,'gvl')" style="display:none">
         <input type="file" id="gvl-pi-camera"  accept="image/*" capture="environment" onchange="onPhotoSelect(event,'gvl')" style="display:none">
         <div class="photo-ph" id="gvl-ph">
-          <div class="photo-ph-icon">🖼️</div>
-          <div class="photo-ph-text">Foto del restaurante o lugar</div>
+          <div class="photo-ph-icon">🍽️</div>
+          <div class="photo-ph-text">Foto del restaurante o actividad</div>
           <div style="display:flex;gap:8px;margin-top:.6rem">
             <button type="button" class="photo-src-btn" onclick="document.getElementById('gvl-pi-camera').click();event.stopPropagation()">📷 Cámara</button>
             <button type="button" class="photo-src-btn" onclick="document.getElementById('gvl-pi-gallery').click();event.stopPropagation()">🖼️ Galería</button>
@@ -739,25 +739,6 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       </div>
     </div>
     <div class="upload-prog" id="gv-prog"><div class="spinner"></div><span>Subiendo foto...</span></div>
-    <div class="fg">
-      <label class="flabel">🏛️ Foto del lugar <span style="color:#cbd5e1;font-weight:400">(opcional · restaurante, hotel...)</span></label>
-      <div class="photo-zone" id="gl-pz">
-        <input type="file" id="gl-pi-gallery" accept="image/*" onchange="onPhotoSelect(event,'gl')" style="display:none">
-        <input type="file" id="gl-pi-camera"  accept="image/*" capture="environment" onchange="onPhotoSelect(event,'gl')" style="display:none">
-        <div class="photo-ph" id="gl-ph">
-          <div class="photo-ph-icon">🏛️</div>
-          <div class="photo-ph-text">Añadir foto del lugar</div>
-          <div style="display:flex;gap:8px;margin-top:.6rem">
-            <button type="button" class="photo-src-btn" onclick="document.getElementById('gl-pi-camera').click();event.stopPropagation()">📷 Cámara</button>
-            <button type="button" class="photo-src-btn" onclick="document.getElementById('gl-pi-gallery').click();event.stopPropagation()">🖼️ Galería</button>
-          </div>
-        </div>
-        <img class="photo-prev" id="gl-prev" alt="">
-        <div class="photo-size-info" id="gl-info"></div>
-        <button class="photo-rm" id="gl-rm" onclick="rmPhoto('gl');event.stopPropagation()">✕</button>
-      </div>
-    </div>
-    <div class="upload-prog" id="gl-prog"><div class="spinner"></div><span>Subiendo foto del lugar...</span></div>
     <div class="mfooter">
       <button class="btn btn-cancel" onclick="closeModal('modal-gv')">Cancelar</button>
       <button class="btn btn-vp" id="gv-save-btn" onclick="saveGastoViaje()">Guardar 💾</button>
@@ -2439,7 +2420,7 @@ function openGVModal(editId){
     selCatV=g.categoria||'comidas';
     if(g.foto_url)loadExistingPhoto('gv',g.foto_url,g.foto_path||null);
     if(g.foto_lugar_url)loadExistingPhoto('gvl',g.foto_lugar_url,g.foto_lugar_path||null);
-    if(lugarSection)lugarSection.style.display=(selCatV==='comidas'||selCatV==='actividades')?'':'none';
+    if(lugarSection)lugarSection.style.display=(selCatV==='comidas'||selCatV==='actividades'||selCatV==='alojamiento')?'':'none';
   }else{
     document.getElementById('gv-imp').value='';document.getElementById('gv-desc').value='';
     document.getElementById('gv-fecha').value=todayISO();
@@ -2498,8 +2479,27 @@ function selectCat(cid,catId,type){
   } else {
     highlightCat(cid,catId,type);
     const lugarSection=document.getElementById('gv-lugar-section');
-    if(lugarSection)lugarSection.style.display=(catId==='comidas'||catId==='actividades')?'':'none';
-    if(catId!=='comidas'&&catId!=='actividades')rmPhoto('gvl');
+  // Actualizar label e icono del campo lugar según categoría
+  const lugarLabel=document.querySelector('#gv-lugar-section .flabel');
+  const lugarIcon=document.querySelector('#gvl-ph .photo-ph-icon');
+  const lugarText=document.querySelector('#gvl-ph .photo-ph-text');
+  if(lugarLabel&&lugarIcon&&lugarText){
+    if(catId==='alojamiento'){
+      lugarIcon.textContent='🏨';
+      lugarText.textContent='Foto del hotel o alojamiento';
+      lugarLabel.innerHTML='🏨 Foto del alojamiento <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';
+    } else if(catId==='actividades'){
+      lugarIcon.textContent='🎡';
+      lugarText.textContent='Foto de la actividad o lugar';
+      lugarLabel.innerHTML='🎡 Foto de la actividad <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';
+    } else {
+      lugarIcon.textContent='🍽️';
+      lugarText.textContent='Foto del restaurante o actividad';
+      lugarLabel.innerHTML='🍽️ Foto del lugar <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';
+    }
+  }
+  if(lugarSection)lugarSection.style.display=(catId==='comidas'||catId==='actividades'||catId==='alojamiento')?'':'none';
+  if(catId!=='comidas'&&catId!=='actividades'&&catId!=='alojamiento')rmPhoto('gvl');
   }
   if(type!=='v')checkBudgetWarn();
 }
