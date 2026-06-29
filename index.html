@@ -374,7 +374,19 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 .export-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border:1.5px solid #e2e8f0;border-radius:8px;background:white;cursor:pointer;font-size:.72rem;font-weight:700;color:#475569;transition:all .18s}
 .export-btn:hover{border-color:#3b82f6;color:#3b82f6}
 
-/* DATE FILTER PILLS */
+/* GASOLINA */
+.gas-veh-row{display:flex;gap:8px;margin-bottom:.75rem}
+.gas-veh{flex:1;padding:10px 8px;border:2px solid #e2e8f0;border-radius:12px;background:white;cursor:pointer;font-size:.78rem;font-weight:700;color:#64748b;text-align:center;transition:all .18s}
+.gas-veh.active{border-color:#f59e0b;background:#fffbeb;color:#b45309}
+.gas-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.65rem;margin-bottom:.85rem}
+.gas-stat-card{background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:.8rem;text-align:center}
+.gas-stat-card .val{font-size:1.3rem;font-weight:900;color:#92400e}
+.gas-stat-card .lbl{font-size:.65rem;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.gas-hist-row{display:flex;align-items:center;gap:8px;padding:.55rem 0;border-bottom:0.5px solid #f1f5f9}
+.gas-hist-veh{font-size:.65rem;font-weight:800;padding:2px 7px;border-radius:20px;background:#fde68a;color:#92400e;white-space:nowrap}
+.gas-filter-row{display:flex;gap:6px;margin-bottom:.75rem}
+.gas-filter-btn{padding:6px 14px;border:1.5px solid #e2e8f0;background:white;border-radius:20px;cursor:pointer;font-size:.73rem;font-weight:700;color:#64748b;transition:all .18s}
+.gas-filter-btn.active{background:#f59e0b;border-color:#f59e0b;color:white}
 .date-filters{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:.85rem}
 .df-pill{padding:6px 12px;border:1.5px solid #e2e8f0;background:white;border-radius:20px;cursor:pointer;font-size:.73rem;font-weight:700;color:#64748b;white-space:nowrap;transition:all .18s}
 .df-pill.active{background:#0f172a;border-color:#0f172a;color:white}
@@ -509,6 +521,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
             <option value="importe-desc">💰 Mayor importe</option>
             <option value="importe-asc">💰 Menor importe</option>
           </select>
+          <button class="export-btn" onclick="openGasolinaStats()" style="flex-shrink:0" title="Estadísticas gasolina">⛽</button>
         </div>
         <div class="person-filters" id="person-filters"></div>
         <div id="gastos-list"></div>
@@ -610,6 +623,21 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       <input type="text" class="finput" id="gh-desc" placeholder="Ej: Mercadona, gasolina..."></div>
     <div class="fg"><label class="flabel">Nota <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
       <textarea class="ftextarea" id="gh-nota" placeholder="Ej: Precio especial, cumpleaños, compartido con..."></textarea></div>
+    <div class="fg" id="gh-gasolina-section" style="display:none">
+      <label class="flabel">⛽ Datos del repostaje</label>
+      <div class="gas-veh-row" id="gh-gas-veh">
+        <div class="gas-veh active" onclick="selectVehiculo('gh','tiguan',this)">🚙 VW Tiguan</div>
+        <div class="gas-veh" onclick="selectVehiculo('gh','golf',this)">🚗 VW Golf</div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="flabel">Litros</label>
+          <input type="number" class="finput" id="gh-litros" placeholder="0.00" step="0.01" min="0" oninput="calcGasImporte('gh')"></div>
+        <div class="fg"><label class="flabel">€ / Litro</label>
+          <input type="number" class="finput" id="gh-precio-litro" placeholder="1.500" step="0.001" min="0" oninput="calcGasImporte('gh')"></div>
+      </div>
+      <div class="fg"><label class="flabel">Gasolinera <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+        <input type="text" class="finput" id="gh-gasolinera" placeholder="Ej: Repsol, BP, Cepsa..."></div>
+    </div>
     <div class="frow">
       <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="gh-fecha"></div>
       <div class="fg"><label class="flabel">Quién pagó</label>
@@ -699,6 +727,21 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       <input type="text" class="finput vf" id="gv-desc" placeholder="Ej: Hotel, cena restaurante..."></div>
     <div class="fg"><label class="flabel">Nota <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
       <textarea class="ftextarea" id="gv-nota" placeholder="Ej: Pendiente pagar resto, incluye desayuno..." style="height:60px"></textarea></div>
+    <div class="fg" id="gv-gasolina-section" style="display:none">
+      <label class="flabel">⛽ Datos del repostaje</label>
+      <div class="gas-veh-row" id="gv-gas-veh">
+        <div class="gas-veh active" onclick="selectVehiculo('gv','tiguan',this)">🚙 VW Tiguan</div>
+        <div class="gas-veh" onclick="selectVehiculo('gv','golf',this)">🚗 VW Golf</div>
+      </div>
+      <div class="frow">
+        <div class="fg"><label class="flabel">Litros</label>
+          <input type="number" class="finput" id="gv-litros" placeholder="0.00" step="0.01" min="0" oninput="calcGasImporte('gv')"></div>
+        <div class="fg"><label class="flabel">€ / Litro</label>
+          <input type="number" class="finput" id="gv-precio-litro" placeholder="1.500" step="0.001" min="0" oninput="calcGasImporte('gv')"></div>
+      </div>
+      <div class="fg"><label class="flabel">Gasolinera <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+        <input type="text" class="finput" id="gv-gasolinera" placeholder="Ej: Repsol, BP, Cepsa..."></div>
+    </div>
     <div class="frow">
       <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="gv-fecha"></div>
       <div class="fg"><label class="flabel">Quién pagó</label><select class="finput" id="gv-quien"></select></div>
@@ -842,6 +885,34 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
   </div>
 </div>
 
+<!-- MODAL ESTADÍSTICAS GASOLINA -->
+<div class="modal-ov" id="modal-gas-stats">
+  <div class="modal-box" style="max-height:92vh">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⛽ Estadísticas Gasolina</div>
+    <div class="gas-filter-row">
+      <div class="gas-filter-btn active" onclick="setGasFilter('todos',this)">🚗 Todos</div>
+      <div class="gas-filter-btn" onclick="setGasFilter('tiguan',this)">🚙 Tiguan</div>
+      <div class="gas-filter-btn" onclick="setGasFilter('golf',this)">🚗 Golf</div>
+    </div>
+    <div class="gas-stat-grid" id="gas-stat-cards"></div>
+    <div class="card" style="margin-bottom:.85rem;padding:.85rem">
+      <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">
+        <span>📈 Precio por litro</span>
+        <button class="export-btn" onclick="exportGasolinaPDF()">📄 PDF</button>
+      </div>
+      <div style="height:120px;position:relative"><canvas id="chart-gas-precio"></canvas></div>
+    </div>
+    <div class="card" style="margin-bottom:.85rem;padding:.85rem">
+      <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">📋 Historial de repostajes</div>
+      <div id="gas-historial"></div>
+    </div>
+    <div class="mfooter">
+      <button class="btn btn-cancel" onclick="closeModal('modal-gas-stats')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL RECORTE -->
 <div class="modal-ov" id="modal-crop">
   <div class="modal-box" style="padding-bottom:1.5rem">
@@ -900,6 +971,7 @@ const CAT_HOGAR=[
   {id:'casa',        icon:'🏠',label:'Casa',         color:'#3b82f6'},
   {id:'farmacia',    icon:'💊',label:'Farmacia',     color:'#ef4444'},
   {id:'coche',       icon:'🚗',label:'Coche',        color:'#6366f1'},
+  {id:'gasolina',    icon:'⛽',label:'Gasolina',     color:'#f59e0b'},
   {id:'colegio',     icon:'🎓',label:'Colegio',      color:'#f59e0b'},
   {id:'restaurante', icon:'🍽️',label:'Restaurante',  color:'#f97316'},
   {id:'ropa',        icon:'👕',label:'Ropa',         color:'#ec4899'},
@@ -1885,6 +1957,10 @@ function openGHModal(editId){
   }
   const lugarSection=document.getElementById('gh-lugar-section');
   if(lugarSection)lugarSection.style.display=selCatH==='restaurante'?'':'none';
+  const gasSecH=document.getElementById('gh-gasolina-section');
+  if(gasSecH)gasSecH.style.display=selCatH==='gasolina'?'':'none';
+  resetGasFields('gh');
+  if(editId&&hogarData[editId]&&hogarData[editId].categoria==='gasolina')loadGasFields('gh',hogarData[editId]);
   highlightCat('gh-cat',selCatH,'h');
   openModal('modal-gh');
   setTimeout(()=>document.getElementById('gh-imp').focus(),320);
@@ -1910,7 +1986,7 @@ async function saveGastoHogar(){
       if(foto_lugar_path&&foto_lugar_path!==res.path)await delPhoto(foto_lugar_path);
       foto_lugar_url=res.url;foto_lugar_path=res.path;
     }
-    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,timestamp:Date.now()};
+    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatH==='gasolina'?getGasData('gh'):{}),timestamp:Date.now()};
     if(editGHId){
       // Si la fecha cambia de mes, mover a nuevo mes
       if(mesGasto!==mesActual){
@@ -2025,7 +2101,171 @@ function getTripImgUrl(nombre='',destino=''){
   }
   return null;
 }
-// ══ VIAJE RESUMEN ══
+// ══ GASOLINA ══
+const VEHICULOS=[{id:'tiguan',label:'VW Tiguan',icon:'🚙'},{id:'golf',label:'VW Golf',icon:'🚗'}];
+let selVehiculo={gh:'tiguan',gv:'tiguan'};
+let chartGasPrecio=null;
+let gasFilterVehiculo='todos';
+
+function selectVehiculo(prefix,id,btn){
+  selVehiculo[prefix]=id;
+  document.querySelectorAll(`#${prefix}-gas-veh .gas-veh`).forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function calcGasImporte(prefix){
+  const litros=parseFloat(document.getElementById(`${prefix}-litros`)?.value||0);
+  const precio=parseFloat(document.getElementById(`${prefix}-precio-litro`)?.value||0);
+  if(litros>0&&precio>0){
+    const total=(litros*precio).toFixed(2);
+    const impEl=document.getElementById(`${prefix}-imp`);
+    if(impEl)impEl.value=total;
+  }
+}
+
+function resetGasFields(prefix){
+  selVehiculo[prefix]='tiguan';
+  const btns=document.querySelectorAll(`#${prefix}-gas-veh .gas-veh`);
+  btns.forEach((b,i)=>b.classList.toggle('active',i===0));
+  const lEl=document.getElementById(`${prefix}-litros`);if(lEl)lEl.value='';
+  const pEl=document.getElementById(`${prefix}-precio-litro`);if(pEl)pEl.value='';
+  const gEl=document.getElementById(`${prefix}-gasolinera`);if(gEl)gEl.value='';
+}
+
+function loadGasFields(prefix,g){
+  if(!g.vehiculo)return;
+  selVehiculo[prefix]=g.vehiculo||'tiguan';
+  document.querySelectorAll(`#${prefix}-gas-veh .gas-veh`).forEach(b=>{
+    b.classList.toggle('active',b.textContent.toLowerCase().includes(g.vehiculo));
+  });
+  const lEl=document.getElementById(`${prefix}-litros`);if(lEl)lEl.value=g.litros||'';
+  const pEl=document.getElementById(`${prefix}-precio-litro`);if(pEl)pEl.value=g.precio_litro||'';
+  const gEl=document.getElementById(`${prefix}-gasolinera`);if(gEl)gEl.value=g.gasolinera||'';
+}
+
+function getGasData(prefix){
+  const litros=parseFloat(document.getElementById(`${prefix}-litros`)?.value||0)||null;
+  const precio_litro=parseFloat(document.getElementById(`${prefix}-precio-litro`)?.value||0)||null;
+  const gasolinera=document.getElementById(`${prefix}-gasolinera`)?.value.trim()||null;
+  return{vehiculo:selVehiculo[prefix]||'tiguan',litros,precio_litro,gasolinera};
+}
+
+// ══ STATS GASOLINA ══
+function setGasFilter(vehiculo,btn){
+  gasFilterVehiculo=vehiculo;
+  document.querySelectorAll('#modal-gas-stats .gas-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGasStats(window._allGasData||[]);
+}
+
+async function openGasolinaStats(){
+  openModal('modal-gas-stats');
+  toast('⏳ Cargando datos...');
+  // Obtener gasolina de todos los meses de hogar
+  const allHogar=await dbGet('gastos_hogar')||{};
+  const gasData=[];
+  Object.entries(allHogar).forEach(([mes,gastos])=>{
+    Object.values(gastos||{}).forEach(g=>{
+      if(g.categoria==='gasolina')gasData.push({...g,fuente:'Hogar',mes});
+    });
+  });
+  // Gasolina de viajes
+  Object.values(viajesData||{}).forEach(v=>{
+    Object.values(v.gastos||{}).forEach(g=>{
+      if(g.categoria==='gasolina')gasData.push({...g,fuente:v.nombre||'Viaje',mes:g.fecha?.substring(0,7)||''});
+    });
+  });
+  gasData.sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1);
+  window._allGasData=gasData;
+  toast('');
+  renderGasStats(gasData);
+}
+
+function renderGasStats(allData){
+  const data=gasFilterVehiculo==='todos'?allData:allData.filter(g=>g.vehiculo===gasFilterVehiculo);
+  const total=data.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const litros=data.reduce((s,g)=>s+parseFloat(g.litros||0),0);
+  const precios=data.filter(g=>g.precio_litro>0).map(g=>parseFloat(g.precio_litro));
+  const mediaP=precios.length?precios.reduce((s,p)=>s+p,0)/precios.length:0;
+  const repostajes=data.length;
+
+  // Summary cards
+  document.getElementById('gas-stat-cards').innerHTML=`
+    <div class="gas-stat-card"><div class="val">${fmtEur(total)}</div><div class="lbl">Total gastado</div></div>
+    <div class="gas-stat-card"><div class="val">${litros.toFixed(1)}L</div><div class="lbl">Litros totales</div></div>
+    <div class="gas-stat-card"><div class="val">${mediaP.toFixed(3)}€</div><div class="lbl">Precio medio/L</div></div>
+    <div class="gas-stat-card"><div class="val">${repostajes}</div><div class="lbl">Repostajes</div></div>`;
+
+  // Chart precio por litro
+  if(chartGasPrecio){chartGasPrecio.destroy();chartGasPrecio=null;}
+  const chartData=data.filter(g=>g.precio_litro>0).slice(0,20).reverse();
+  if(chartData.length>1){
+    chartGasPrecio=new Chart(document.getElementById('chart-gas-precio').getContext('2d'),{
+      type:'line',
+      data:{
+        labels:chartData.map(g=>fmtDate(g.fecha)),
+        datasets:[{
+          data:chartData.map(g=>parseFloat(g.precio_litro)),
+          borderColor:'#f59e0b',backgroundColor:'#fef3c7',fill:true,tension:.4,
+          pointBackgroundColor:'#f59e0b',pointRadius:4,borderWidth:2
+        }]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{beginAtZero:false,ticks:{callback:v=>v+'€',font:{size:9}}},x:{ticks:{font:{size:9}}}}}
+    });
+  }
+
+  // Historial
+  const hist=document.getElementById('gas-historial');
+  if(!data.length){hist.innerHTML='<div class="empty" style="padding:1rem"><div class="et">Sin repostajes registrados</div></div>';return;}
+  hist.innerHTML=data.map(g=>{
+    const veh=VEHICULOS.find(v=>v.id===g.vehiculo);
+    return`<div class="gas-hist-row">
+      <div style="flex:1">
+        <div style="font-size:.82rem;font-weight:700">${fmtDate(g.fecha)} ${g.gasolinera?`· ${esc(g.gasolinera)}`:''}</div>
+        <div style="font-size:.7rem;color:#94a3b8">${g.fuente} ${g.litros?`· ${parseFloat(g.litros).toFixed(2)}L`:''} ${g.precio_litro?`· ${parseFloat(g.precio_litro).toFixed(3)}€/L`:''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <span class="gas-hist-veh">${veh?veh.icon+' '+veh.label:'⛽'}</span>
+        <div style="font-size:.9rem;font-weight:900">${fmtEur(g.importe)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function exportGasolinaPDF(){
+  const data=gasFilterVehiculo==='todos'?(window._allGasData||[]):(window._allGasData||[]).filter(g=>g.vehiculo===gasFilterVehiculo);
+  const total=data.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const litros=data.reduce((s,g)=>s+parseFloat(g.litros||0),0);
+  const precios=data.filter(g=>g.precio_litro>0).map(g=>parseFloat(g.precio_litro));
+  const mediaP=precios.length?precios.reduce((s,p)=>s+p,0)/precios.length:0;
+  const titulo=gasFilterVehiculo==='todos'?'Todos los vehículos':VEHICULOS.find(v=>v.id===gasFilterVehiculo)?.label||gasFilterVehiculo;
+  const w=window.open('','_blank');
+  w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>⛽ Gasolina</title>'
+  +'<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;color:#0f172a;padding:2rem;max-width:800px;margin:0 auto;font-size:14px}'
+  +'h1{font-size:1.6rem;font-weight:900;margin-bottom:.25rem}.sub{color:#64748b;font-size:.85rem;margin-bottom:1.5rem}'
+  +'.pb{padding:10px 20px;background:#f59e0b;color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-bottom:1.5rem}'
+  +'.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:.6rem;margin-bottom:1.5rem}'
+  +'.box{background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:.75rem;text-align:center}'
+  +'.box .v{font-size:1.2rem;font-weight:900;color:#92400e}.box .l{font-size:.65rem;color:#b45309;font-weight:700;text-transform:uppercase;margin-top:3px}'
+  +'table{width:100%;border-collapse:collapse}th{background:#fffbeb;padding:.55rem .75rem;text-align:left;font-size:.7rem;text-transform:uppercase;color:#b45309}'
+  +'td{padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;font-size:.83rem}.num{text-align:right;font-weight:700}'
+  +'.tr{background:#f8fafc;font-weight:900}.tr td{padding:.65rem .75rem}@media print{.pb{display:none}}</style></head><body>'
+  +'<button class="pb" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
+  +'<h1>⛽ Gasolina — '+esc(titulo)+'</h1>'
+  +'<div class="sub">'+data.length+' repostajes registrados</div>'
+  +'<div class="grid">'
+  +'<div class="box"><div class="v">'+fmtEur(total)+'</div><div class="l">Total</div></div>'
+  +'<div class="box"><div class="v">'+litros.toFixed(1)+'L</div><div class="l">Litros</div></div>'
+  +'<div class="box"><div class="v">'+mediaP.toFixed(3)+'€</div><div class="l">Media €/L</div></div>'
+  +'<div class="box"><div class="v">'+data.length+'</div><div class="l">Repostajes</div></div>'
+  +'</div>'
+  +'<table><thead><tr><th>Fecha</th><th>Vehículo</th><th>Gasolinera</th><th>Litros</th><th>€/L</th><th>Importe</th></tr></thead><tbody>'
+  +data.map(g=>{const veh=VEHICULOS.find(v=>v.id===g.vehiculo);return'<tr><td>'+fmtDate(g.fecha)+'</td><td>'+(veh?veh.icon+' '+veh.label:'—')+'</td><td>'+esc(g.gasolinera||'—')+'</td><td>'+(g.litros?parseFloat(g.litros).toFixed(2)+'L':'—')+'</td><td>'+(g.precio_litro?parseFloat(g.precio_litro).toFixed(3)+'€':'—')+'</td><td class="num">'+fmtEur(g.importe)+'</td></tr>';}).join('')
+  +'</tbody><tfoot><tr class="tr"><td colspan="5">TOTAL</td><td class="num">'+fmtEur(total)+'</td></tr></tfoot></table>'
+  +'</body></html>');
+  w.document.close();
+}
 let chartViajeDonut=null;
 function renderViajeResumen(id){
   const v=viajesData[id];if(!v)return;
@@ -2451,6 +2691,11 @@ function openGVModal(editId){
     if(g.foto_url)loadExistingPhoto('gv',g.foto_url,g.foto_path||null);
     if(g.foto_lugar_url)loadExistingPhoto('gvl',g.foto_lugar_url,g.foto_lugar_path||null);
     if(lugarSection)lugarSection.style.display=(selCatV==='comidas'||selCatV==='actividades'||selCatV==='alojamiento')?'':'none';
+    // Gas section
+    const gasSecV=document.getElementById('gv-gasolina-section');
+    if(gasSecV)gasSecV.style.display=selCatV==='gasolina'?'':'none';
+    resetGasFields('gv');
+    if(editId&&g.categoria==='gasolina')loadGasFields('gv',g);
     // Actualizar label según categoría cargada
     const lugarLbl=document.querySelector('#gv-lugar-section .flabel');
     const lugarIco=document.querySelector('#gvl-ph .photo-ph-icon');
@@ -2487,7 +2732,7 @@ async function saveGastoViaje(){
       if(foto_lugar_path&&foto_lugar_path!==res.path)await delPhoto(foto_lugar_path);
       foto_lugar_url=res.url;foto_lugar_path=res.path;
     }
-    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,timestamp:Date.now()};
+    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatV==='gasolina'?getGasData('gv'):{}),timestamp:Date.now()};
     if(editGVId){await dbUpd(`gastos_viajes/${currentViaje}/gastos/${editGVId}`,data);toast('✅ Gasto actualizado');}
     else{await dbPush(`gastos_viajes/${currentViaje}/gastos`,data);toast('✅ Gasto añadido');}
     closeModal('modal-gv');
@@ -2512,34 +2757,28 @@ function selectCat(cid,catId,type){
     document.querySelectorAll('#gh-cat .cpick, #gh-cat-fijos .cpick').forEach(b=>b.classList.remove('sel','selv'));
     document.getElementById(`gh-cat-fijos-${catId}`)?.classList.add('sel');
     document.getElementById(`gh-cat-${catId}`)?.classList.add('sel');
-    // Mostrar foto de restaurante solo para categoría Restaurante
     const lugarSection=document.getElementById('gh-lugar-section');
     if(lugarSection)lugarSection.style.display=catId==='restaurante'?'':'none';
     if(catId!=='restaurante')rmPhoto('ghl');
+    const gasSecH=document.getElementById('gh-gasolina-section');
+    if(gasSecH)gasSecH.style.display=catId==='gasolina'?'':'none';
+    if(catId!=='gasolina')resetGasFields('gh');
   } else {
     highlightCat(cid,catId,type);
     const lugarSection=document.getElementById('gv-lugar-section');
-  // Actualizar label e icono del campo lugar según categoría
-  const lugarLabel=document.querySelector('#gv-lugar-section .flabel');
-  const lugarIcon=document.querySelector('#gvl-ph .photo-ph-icon');
-  const lugarText=document.querySelector('#gvl-ph .photo-ph-text');
-  if(lugarLabel&&lugarIcon&&lugarText){
-    if(catId==='alojamiento'){
-      lugarIcon.textContent='🏨';
-      lugarText.textContent='Foto del hotel o alojamiento';
-      lugarLabel.innerHTML='🏨 Foto del alojamiento <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';
-    } else if(catId==='actividades'){
-      lugarIcon.textContent='🎡';
-      lugarText.textContent='Foto de la actividad o lugar';
-      lugarLabel.innerHTML='🎡 Foto de la actividad <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';
-    } else {
-      lugarIcon.textContent='🍽️';
-      lugarText.textContent='Foto del restaurante o actividad';
-      lugarLabel.innerHTML='🍽️ Foto del lugar <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';
+    const lugarLabel=document.querySelector('#gv-lugar-section .flabel');
+    const lugarIcon=document.querySelector('#gvl-ph .photo-ph-icon');
+    const lugarText=document.querySelector('#gvl-ph .photo-ph-text');
+    if(lugarLabel&&lugarIcon&&lugarText){
+      if(catId==='alojamiento'){lugarIcon.textContent='🏨';lugarText.textContent='Foto del hotel o alojamiento';lugarLabel.innerHTML='🏨 Foto del alojamiento <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';}
+      else if(catId==='actividades'){lugarIcon.textContent='🎡';lugarText.textContent='Foto de la actividad o lugar';lugarLabel.innerHTML='🎡 Foto de la actividad <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';}
+      else{lugarIcon.textContent='🍽️';lugarText.textContent='Foto del restaurante o actividad';lugarLabel.innerHTML='🍽️ Foto del lugar <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';}
     }
-  }
-  if(lugarSection)lugarSection.style.display=(catId==='comidas'||catId==='actividades'||catId==='alojamiento')?'':'none';
-  if(catId!=='comidas'&&catId!=='actividades'&&catId!=='alojamiento')rmPhoto('gvl');
+    if(lugarSection)lugarSection.style.display=(catId==='comidas'||catId==='actividades'||catId==='alojamiento')?'':'none';
+    if(catId!=='comidas'&&catId!=='actividades'&&catId!=='alojamiento')rmPhoto('gvl');
+    const gasSecV=document.getElementById('gv-gasolina-section');
+    if(gasSecV)gasSecV.style.display=catId==='gasolina'?'':'none';
+    if(catId!=='gasolina')resetGasFields('gv');
   }
   if(type!=='v')checkBudgetWarn();
 }
