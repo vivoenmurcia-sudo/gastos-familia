@@ -1397,23 +1397,39 @@ function handleFab(){
 // ══ HERO ══
 function updateHero(){
   const entries=Object.values(hogarData);
-  const total=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const totalHogar=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
   const lbl=fmtMon(get_currentMonth());
+  const mes=get_currentMonth(); // YYYY-MM
+
+  // Sumar gastos de viajes activos este mes
+  let totalViajes=0;
+  Object.values(viajesData||{}).forEach(v=>{
+    Object.values(v.gastos||{}).forEach(g=>{
+      if((g.fecha||'').startsWith(mes))totalViajes+=parseFloat(g.importe||0);
+    });
+  });
+
+  const totalGeneral=totalHogar+totalViajes;
+
   document.getElementById('hero-month-lbl').textContent=lbl;
-  document.getElementById('hero-amount').textContent=fmtEur(total);
+  document.getElementById('hero-amount').textContent=fmtEur(totalGeneral);
+
   const rec=entries.filter(g=>g.recurrente).length;
-  document.getElementById('hero-sub').textContent=`${entries.length} operaciones · ${entries.filter(g=>g.foto_url).length} con ticket${rec?` · ${rec} recurrentes`:''}`;
+  const subParts=[`${entries.length} operac. hogar`];
+  if(totalViajes>0)subParts.push(`✈️ ${fmtEur(totalViajes)} viajes`);
+  if(rec)subParts.push(`${rec} recurrentes`);
+  document.getElementById('hero-sub').textContent=subParts.join(' · ');
 
   // Barra de progreso total vs presupuesto
   const pres=cfgData.presupuestos||{};
   const totalBudget=Object.values(pres).reduce((s,v)=>s+parseFloat(v||0),0);
   const progEl=document.getElementById('hero-progress');
   if(totalBudget>0){
-    const pct=Math.min(100,(total/totalBudget)*100);
+    const pct=Math.min(100,(totalGeneral/totalBudget)*100);
     const fill=document.getElementById('hero-prog-fill');
     fill.style.width=pct+'%';
     fill.className='hero-progress-fill'+(pct>=100?' over':'');
-    document.getElementById('hero-prog-lbl').textContent=`${fmtEur(total)} de ${fmtEur(totalBudget)}`;
+    document.getElementById('hero-prog-lbl').textContent=`${fmtEur(totalGeneral)} de ${fmtEur(totalBudget)}`;
     document.getElementById('hero-prog-pct').textContent=Math.round(pct)+'%';
     progEl.style.display='block';
   }else{progEl.style.display='none';}
@@ -2450,16 +2466,28 @@ function exportCategoriaPDF(){
 // ══ PORTADA VIAJE ══
 async function uploadPortadaViaje(id, input){
   const file=input.files[0];if(!file)return;
+  input.value=''; // reset input
   toast('⏳ Subiendo portada...');
   try{
     const v=viajesData[id];
-    const compressed=await compressImg(file,1200,0.85);
+    // Comprimir una sola vez (más ancho para portadas)
+    const blob=await compressImg(file,1400,0.88);
     const path=`portadas/${id}.jpg`;
     if(v?.foto_portada_path)await delPhoto(v.foto_portada_path).catch(()=>{});
-    const res=await uploadPhoto(compressed,path);
-    await dbUpd(`gastos_viajes/${id}`,{foto_portada_url:res.url,foto_portada_path:res.path});
+    const ref=window._sRef(window._storage,path);
+    await window._uploadBytes(ref,blob);
+    const url=await window._getDownloadURL(ref);
+    await dbUpd(`gastos_viajes/${id}`,{foto_portada_url:url,foto_portada_path:path});
     toast('✅ Portada actualizada');
   }catch(e){console.error(e);toast('❌ Error al subir la portada');}
+}
+
+async function delPortadaViaje(id){
+  if(!confirm('¿Eliminar la foto de portada personalizada?'))return;
+  const v=viajesData[id];
+  if(v?.foto_portada_path)await delPhoto(v.foto_portada_path).catch(()=>{});
+  await dbUpd(`gastos_viajes/${id}`,{foto_portada_url:null,foto_portada_path:null});
+  toast('🗑️ Portada eliminada');
 }
 
 function renderVList(){
@@ -2528,9 +2556,10 @@ function renderVDetail(id){
         <button class="vback-btn" onclick="showVList()">← Volver</button>
         <div style="display:flex;gap:4px;align-items:center">
           ${isAdmin?`
-            <label title="Cambiar foto de portada" style="background:rgba(255,255,255,.2);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem" title="Foto portada">
+            <label style="background:rgba(255,255,255,.2);color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.85rem" title="${v.foto_portada_url?'Cambiar portada':'Añadir portada'}">
               📷<input type="file" accept="image/*" onchange="uploadPortadaViaje('${id}',this)" style="display:none">
             </label>
+            ${v.foto_portada_url?`<button style="background:rgba(255,255,255,.2);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.75rem" onclick="delPortadaViaje('${id}')" title="Quitar portada">🗑️</button>`:''}
             <button class="iBtn ed" style="background:rgba(255,255,255,.2);color:white" onclick="openViajeModal('${id}');event.stopPropagation()">✏️</button>
             <button class="iBtn dl" style="background:rgba(255,255,255,.2);color:white" onclick="delViaje('${id}');event.stopPropagation()">🗑️</button>
           `:''}
