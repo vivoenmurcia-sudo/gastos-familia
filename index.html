@@ -740,6 +740,10 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       <input type="text" class="finput vf" id="gv-desc" placeholder="Ej: Hotel, cena restaurante..."></div>
     <div class="fg"><label class="flabel">Nota <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
       <textarea class="ftextarea" id="gv-nota" placeholder="Ej: Pendiente pagar resto, incluye desayuno..." style="height:60px"></textarea></div>
+    <!-- ENLACE — solo Actividades y Alojamiento -->
+    <div class="fg" id="gv-enlace-section" style="display:none">
+      <label class="flabel">🔗 Enlace de entrada / reserva <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+      <input type="url" class="finput" id="gv-enlace" placeholder="https://..."></div>
     <div class="fg" id="gv-gasolina-section" style="display:none">
       <label class="flabel">⛽ Datos del repostaje</label>
       <div class="gas-veh-row" id="gv-gas-veh">
@@ -1821,6 +1825,8 @@ function openDetalle(tipo, id, viajeId){
     {icon:'📅', lbl:'Fecha',       val:fmtDate(g.fecha)||'—'},
     ...(g.recurrente?[{icon:'🔄', lbl:'Tipo', val:'Gasto recurrente mensual'}]:[]),
   ];
+  // Enlace como botón especial
+  const enlaceHtml=g.enlace?`<a href="${esc(g.enlace)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:.75rem;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;color:#1d4ed8;text-decoration:none;font-size:.82rem;font-weight:700;margin-top:.5rem">🔗 Ver entrada / reserva <span style="margin-left:auto;font-size:.85rem">→</span></a>`:'';
   document.getElementById('detalle-body').innerHTML=rows.map(r=>`
     <div class="detalle-row">
       <div class="detalle-row-icon">${r.icon}</div>
@@ -1828,7 +1834,7 @@ function openDetalle(tipo, id, viajeId){
         <div class="detalle-row-lbl">${r.lbl}</div>
         <div class="detalle-row-val">${esc(r.val)}</div>
       </div>
-    </div>`).join('');
+    </div>`).join('')+(enlaceHtml||'');
 
   // Ticket abajo — solo si hay foto y no es la misma que ya se muestra en el header
   const fotoDiv=document.getElementById('detalle-foto');
@@ -2662,6 +2668,7 @@ function renderVGastos(id){
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>Paga: ${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?'<span class="photo-badge">📸</span>':''}
           ${g.foto_lugar_url?'<span class="photo-badge" style="background:#fdf4ff;color:#9333ea">🖼️</span>':''}
+          ${g.enlace?'<span class="photo-badge" style="background:#eff6ff;color:#1d4ed8">🔗</span>':''}
         </div>
       </div>
       <div class="gasto-right" onclick="stopProp(event)">
@@ -2792,6 +2799,11 @@ function openGVModal(editId){
     if(gasSecV)gasSecV.style.display=selCatV==='gasolina'?'':'none';
     resetGasFields('gv');
     if(editId&&g.categoria==='gasolina')loadGasFields('gv',g);
+    // Enlace section
+    const enlaceSection=document.getElementById('gv-enlace-section');
+    if(enlaceSection)enlaceSection.style.display=(selCatV==='actividades'||selCatV==='alojamiento')?'':'none';
+    const enlaceEl=document.getElementById('gv-enlace');
+    if(enlaceEl)enlaceEl.value=editId?g.enlace||'':'';
     // Actualizar label según categoría cargada
     const lugarLbl=document.querySelector('#gv-lugar-section .flabel');
     const lugarIco=document.querySelector('#gvl-ph .photo-ph-icon');
@@ -2828,7 +2840,8 @@ async function saveGastoViaje(){
       if(foto_lugar_path&&foto_lugar_path!==res.path)await delPhoto(foto_lugar_path);
       foto_lugar_url=res.url;foto_lugar_path=res.path;
     }
-    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatV==='gasolina'?getGasData('gv'):{}),timestamp:Date.now()};
+    const enlace=document.getElementById('gv-enlace')?.value.trim()||null;
+    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,enlace:enlace||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatV==='gasolina'?getGasData('gv'):{}),timestamp:Date.now()};
     if(editGVId){await dbUpd(`gastos_viajes/${currentViaje}/gastos/${editGVId}`,data);toast('✅ Gasto actualizado');}
     else{await dbPush(`gastos_viajes/${currentViaje}/gastos`,data);toast('✅ Gasto añadido');}
     closeModal('modal-gv');
@@ -2879,6 +2892,10 @@ function selectCat(cid,catId,type){
     const gasSecV=document.getElementById('gv-gasolina-section');
     if(gasSecV)gasSecV.style.display=catId==='gasolina'?'':'none';
     if(catId!=='gasolina')resetGasFields('gv');
+    // Enlace section
+    const enlaceSection=document.getElementById('gv-enlace-section');
+    if(enlaceSection)enlaceSection.style.display=(catId==='actividades'||catId==='alojamiento')?'':'none';
+    if(catId!=='actividades'&&catId!=='alojamiento'){const el=document.getElementById('gv-enlace');if(el)el.value='';}
   }
   if(type!=='v')checkBudgetWarn();
 }
