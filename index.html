@@ -742,7 +742,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       <textarea class="ftextarea" id="gv-nota" placeholder="Ej: Pendiente pagar resto, incluye desayuno..." style="height:60px"></textarea></div>
     <!-- ENLACE — solo Actividades y Alojamiento -->
     <div class="fg" id="gv-enlace-section" style="display:none">
-      <label class="flabel">🔗 Enlace de entrada / reserva <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+      <label class="flabel" id="gv-enlace-lbl">🔗 Enlace <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
       <input type="url" class="finput" id="gv-enlace" placeholder="https://..."></div>
     <div class="fg" id="gv-gasolina-section" style="display:none">
       <label class="flabel">⛽ Datos del repostaje</label>
@@ -1512,7 +1512,11 @@ function renderHGastos(){
     return`<div class="gasto-item" onclick="openDetalle('hogar','${id}')">
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
-        <div class="gasto-desc">${esc(g.descripcion||cat.label)}${g.cadena?` <span style="font-size:.65rem;font-weight:800;padding:1px 6px;border-radius:10px;background:#dcfce7;color:#15803d">${g.cadena}</span>`:''}</div>
+        <div class="gasto-desc">
+          ${g.cadena&&!g.descripcion?`<span style="font-weight:900">${g.cadena}</span>`:esc(g.descripcion||cat.label)}
+          ${g.cadena&&g.descripcion?`<span style="font-size:.65rem;font-weight:800;padding:1px 7px;border-radius:10px;background:#dcfce7;color:#15803d;margin-left:4px">${g.cadena}</span>`:''}
+        </div>
+        ${g.cadena&&!g.descripcion?`<div style="font-size:.7rem;color:#94a3b8;margin-top:1px">🛒 Supermercado</div>`:''}
         ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?'<span class="photo-badge">📸</span>':''}
@@ -1826,7 +1830,8 @@ function openDetalle(tipo, id, viajeId){
     ...(g.recurrente?[{icon:'🔄', lbl:'Tipo', val:'Gasto recurrente mensual'}]:[]),
   ];
   // Enlace como botón especial
-  const enlaceHtml=g.enlace?`<a href="${esc(g.enlace)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:.75rem;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;color:#1d4ed8;text-decoration:none;font-size:.82rem;font-weight:700;margin-top:.5rem">🔗 Ver entrada / reserva <span style="margin-left:auto;font-size:.85rem">→</span></a>`:'';
+  const enlaceTxt=cat.id==='alojamiento'?'🏨 Ver hotel / reserva':'🎟️ Ver entradas / reserva';
+  const enlaceHtml=g.enlace?`<a href="${esc(g.enlace)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:.75rem;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;color:#1d4ed8;text-decoration:none;font-size:.82rem;font-weight:700;margin-top:.5rem">${enlaceTxt} <span style="margin-left:auto;font-size:.85rem">→</span></a>`:'';
   document.getElementById('detalle-body').innerHTML=rows.map(r=>`
     <div class="detalle-row">
       <div class="detalle-row-icon">${r.icon}</div>
@@ -2447,15 +2452,41 @@ function renderCatDetalleLista(){
   const total=filtered.reduce((s,g)=>s+parseFloat(g.importe||0),0);
   const sub=document.getElementById('catd-sub');
   if(sub)sub.textContent=`${fmtMon(get_currentMonth())} · ${filtered.length} gasto${filtered.length!==1?'s':''} · ${fmtEur(total)}`;
-  document.getElementById('catd-lista').innerHTML=filtered.length
+
+  // Desglose por cadena si es supermercado
+  let cadenaHtml='';
+  if(currentCatId==='supermercado'&&filtered.length){
+    const byCadena={};
+    filtered.forEach(g=>{const k=g.cadena||'Sin cadena';byCadena[k]=(byCadena[k]||0)+parseFloat(g.importe||0);});
+    const sorted=Object.entries(byCadena).sort((a,b)=>b[1]-a[1]);
+    cadenaHtml=`<div style="margin-bottom:.85rem">
+      <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;color:#64748b;letter-spacing:.06em;margin-bottom:.5rem">🛒 Por cadena</div>
+      ${sorted.map(([k,v])=>{
+        const pct=total>0?Math.round((v/total)*100):0;
+        return`<div style="margin-bottom:.4rem">
+          <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:2px">
+            <span style="font-weight:700">${esc(k)}</span>
+            <span style="font-weight:900">${fmtEur(v)} <span style="color:#94a3b8;font-weight:400">${pct}%</span></span>
+          </div>
+          <div style="background:#f1f5f9;border-radius:99px;height:6px;overflow:hidden">
+            <div style="height:100%;background:#22c55e;border-radius:99px;width:${pct}%"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  document.getElementById('catd-lista').innerHTML=cadenaHtml+(filtered.length
     ?'<div class="gasto-list">'+filtered.map(g=>{const quien=FAMILY.find(f=>f.id===g.quien)?.name||'?';
       return`<div class="gasto-item" onclick="closeModal('modal-cat-detalle');setTimeout(()=>openDetalle('hogar','${g._key}'),200)">
         <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
-        <div class="gasto-body"><div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
-        <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}${g.foto_url?'<span class="photo-badge">📸</span>':''}</div></div>
+        <div class="gasto-body">
+          <div class="gasto-desc">${g.cadena?`<span style="font-weight:900">${esc(g.cadena)}</span>`:esc(g.descripcion||cat.label)}</div>
+          <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}${g.foto_url?'<span class="photo-badge">📸</span>':''}</div>
+        </div>
         <div class="gasto-right"><div class="gasto-importe">${fmtEur(g.importe)}</div></div>
       </div>`;}).join('')+'</div>'
-    :`<div class="empty" style="padding:1.5rem"><div class="ei">${cat.icon}</div><div class="et">Sin gastos en este período</div></div>`;
+    :`<div class="empty" style="padding:1.5rem"><div class="ei">${cat.icon}</div><div class="et">Sin gastos en este período</div></div>`);
 }
 
 function renderVCatDetalleLista(){
@@ -2801,7 +2832,12 @@ function openGVModal(editId){
     if(editId&&g.categoria==='gasolina')loadGasFields('gv',g);
     // Enlace section
     const enlaceSection=document.getElementById('gv-enlace-section');
+    const enlaceLbl=document.getElementById('gv-enlace-lbl');
     if(enlaceSection)enlaceSection.style.display=(selCatV==='actividades'||selCatV==='alojamiento')?'':'none';
+    if(enlaceLbl){
+      if(selCatV==='actividades')enlaceLbl.innerHTML='🎟️ Enlace de entradas <span style="color:#cbd5e1;font-weight:400">(opcional)</span>';
+      else if(selCatV==='alojamiento')enlaceLbl.innerHTML='🏨 Web del hotel / reserva <span style="color:#cbd5e1;font-weight:400">(opcional)</span>';
+    }
     const enlaceEl=document.getElementById('gv-enlace');
     if(enlaceEl)enlaceEl.value=editId?g.enlace||'':'';
     // Actualizar label según categoría cargada
@@ -2894,8 +2930,12 @@ function selectCat(cid,catId,type){
     if(catId!=='gasolina')resetGasFields('gv');
     // Enlace section
     const enlaceSection=document.getElementById('gv-enlace-section');
+    const enlaceLbl=document.getElementById('gv-enlace-lbl');
+    const enlaceInput=document.getElementById('gv-enlace');
     if(enlaceSection)enlaceSection.style.display=(catId==='actividades'||catId==='alojamiento')?'':'none';
-    if(catId!=='actividades'&&catId!=='alojamiento'){const el=document.getElementById('gv-enlace');if(el)el.value='';}
+    if(catId==='actividades'&&enlaceLbl)enlaceLbl.innerHTML='🎟️ Enlace de entradas <span style="color:#cbd5e1;font-weight:400">(opcional)</span>';
+    if(catId==='alojamiento'&&enlaceLbl)enlaceLbl.innerHTML='🏨 Web del hotel / reserva <span style="color:#cbd5e1;font-weight:400">(opcional)</span>';
+    if(catId!=='actividades'&&catId!=='alojamiento'&&enlaceInput)enlaceInput.value='';
   }
   if(type!=='v')checkBudgetWarn();
 }
