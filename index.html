@@ -491,6 +491,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     <div id="sec-hogar" class="section active">
       <div class="hero-card">
         <div class="hero-month-lbl" id="hero-month-lbl">—</div>
+        <div style="font-size:.6rem;opacity:.5;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:1px">Gastos variables</div>
         <div class="hero-amount" id="hero-amount">0,00 €</div>
         <div class="hero-sub" id="hero-sub">—</div>
         <div class="hero-progress" id="hero-progress" style="display:none">
@@ -637,6 +638,18 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       </div>
       <div class="fg"><label class="flabel">Gasolinera <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
         <input type="text" class="finput" id="gh-gasolinera" placeholder="Ej: Repsol, BP, Cepsa..."></div>
+    </div>
+    <!-- SUPERMERCADO — selector de cadena -->
+    <div class="fg" id="gh-super-section" style="display:none">
+      <label class="flabel">🛒 Cadena de supermercado</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px" id="gh-super-cadena">
+        <div class="gas-veh active" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','Mercadona',this)">🟢 Mercadona</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','Lidl',this)">🔵 Lidl</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','Carrefour',this)">🟠 Carrefour</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','Aldi',this)">🟡 Aldi</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','otro',this)">✏️ Otra</div>
+      </div>
+      <input type="text" class="finput" id="gh-super-otro" placeholder="Nombre del supermercado..." style="display:none">
     </div>
     <div class="frow">
       <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="gh-fecha"></div>
@@ -1397,30 +1410,30 @@ function handleFab(){
 // ══ HERO ══
 function updateHero(){
   const entries=Object.values(hogarData);
-  const totalHogar=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
-  const lbl=fmtMon(get_currentMonth());
-  const mes=get_currentMonth(); // YYYY-MM
+  const fijoIds=CAT_FIJOS.map(c=>c.id);
+  const totalFijos=entries.filter(g=>fijoIds.includes(g.categoria)).reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const totalVariables=entries.filter(g=>!fijoIds.includes(g.categoria)).reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const totalHogar=totalFijos+totalVariables;
+  const mes=get_currentMonth();
 
-  // Sumar gastos de viajes activos este mes
+  // Viajes activos este mes
   let totalViajes=0;
   Object.values(viajesData||{}).forEach(v=>{
     Object.values(v.gastos||{}).forEach(g=>{
       if((g.fecha||'').startsWith(mes))totalViajes+=parseFloat(g.importe||0);
     });
   });
-
   const totalGeneral=totalHogar+totalViajes;
 
-  document.getElementById('hero-month-lbl').textContent=lbl;
-  document.getElementById('hero-amount').textContent=fmtEur(totalGeneral);
+  document.getElementById('hero-month-lbl').textContent=fmtMon(mes);
+  document.getElementById('hero-amount').textContent=fmtEur(totalVariables); // Variables en grande
 
-  const rec=entries.filter(g=>g.recurrente).length;
-  const subParts=[`${entries.length} operac. hogar`];
-  if(totalViajes>0)subParts.push(`✈️ ${fmtEur(totalViajes)} viajes`);
-  if(rec)subParts.push(`${rec} recurrentes`);
+  // Sub-línea con contexto completo
+  const subParts=[`Total: ${fmtEur(totalGeneral)}`,`Fijos: ${fmtEur(totalFijos)}`];
+  if(totalViajes>0)subParts.push(`✈️ ${fmtEur(totalViajes)}`);
   document.getElementById('hero-sub').textContent=subParts.join(' · ');
 
-  // Barra de progreso total vs presupuesto
+  // Barra de progreso sobre gastos variables vs presupuesto
   const pres=cfgData.presupuestos||{};
   const totalBudget=Object.values(pres).reduce((s,v)=>s+parseFloat(v||0),0);
   const progEl=document.getElementById('hero-progress');
@@ -1434,8 +1447,8 @@ function updateHero(){
     progEl.style.display='block';
   }else{progEl.style.display='none';}
 
-  // Person filter pills
-  buildPersonFilters(FAMILY.map(f=>({...f,total:Object.values(hogarData).filter(g=>g.quien===f.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(f=>f.total>0).sort((a,b)=>b.total-a.total));
+  // Person filter pills (solo sobre variables)
+  buildPersonFilters(FAMILY.map(f=>({...f,total:entries.filter(g=>g.quien===f.id&&!fijoIds.includes(g.categoria)).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(f=>f.total>0).sort((a,b)=>b.total-a.total));
 }
 
 // ══ HOGAR GASTOS ══
@@ -1495,7 +1508,7 @@ function renderHGastos(){
     return`<div class="gasto-item" onclick="openDetalle('hogar','${id}')">
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
-        <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
+        <div class="gasto-desc">${esc(g.descripcion||cat.label)}${g.cadena?` <span style="font-size:.65rem;font-weight:800;padding:1px 6px;border-radius:10px;background:#dcfce7;color:#15803d">${g.cadena}</span>`:''}</div>
         ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?'<span class="photo-badge">📸</span>':''}
@@ -1977,6 +1990,11 @@ function openGHModal(editId){
   if(gasSecH)gasSecH.style.display=selCatH==='gasolina'?'':'none';
   resetGasFields('gh');
   if(editId&&hogarData[editId]&&hogarData[editId].categoria==='gasolina')loadGasFields('gh',hogarData[editId]);
+  // Supermercado
+  const superSecH=document.getElementById('gh-super-section');
+  if(superSecH)superSecH.style.display=selCatH==='supermercado'?'':'none';
+  resetCadenaSuper('gh');
+  if(editId&&hogarData[editId]&&hogarData[editId].cadena)loadCadenaSuper('gh',hogarData[editId].cadena);
   highlightCat('gh-cat',selCatH,'h');
   openModal('modal-gh');
   setTimeout(()=>document.getElementById('gh-imp').focus(),320);
@@ -2002,7 +2020,7 @@ async function saveGastoHogar(){
       if(foto_lugar_path&&foto_lugar_path!==res.path)await delPhoto(foto_lugar_path);
       foto_lugar_url=res.url;foto_lugar_path=res.path;
     }
-    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatH==='gasolina'?getGasData('gh'):{}),timestamp:Date.now()};
+    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatH==='gasolina'?getGasData('gh'):{}),...(selCatH==='supermercado'?{cadena:getCadenaData('gh')}:{}),timestamp:Date.now()};
     if(editGHId){
       // Si la fecha cambia de mes, mover a nuevo mes
       if(mesGasto!==mesActual){
@@ -2336,7 +2354,56 @@ function exportViajeResumen(){
   w.document.close();
 }
 
-// ══ FILTROS FECHA CATEGORÍA ══
+// ══ SUPERMERCADO CADENA ══
+const CADENAS_SUPER=[
+  {id:'Mercadona',label:'Mercadona',icon:'🟢'},
+  {id:'Lidl',label:'Lidl',icon:'🔵'},
+  {id:'Carrefour',label:'Carrefour',icon:'🟠'},
+  {id:'Aldi',label:'Aldi',icon:'🟡'},
+];
+let selCadenaSuper={gh:'Mercadona'};
+
+function selectCadena(prefix,cadena,btn){
+  selCadenaSuper[prefix]=cadena;
+  document.querySelectorAll(`#${prefix}-super-cadena .gas-veh`).forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const otroInput=document.getElementById(`${prefix}-super-otro`);
+  if(otroInput)otroInput.style.display=cadena==='otro'?'block':'none';
+}
+
+function getCadenaData(prefix){
+  const cadena=selCadenaSuper[prefix]||'Mercadona';
+  if(cadena==='otro'){
+    const val=document.getElementById(`${prefix}-super-otro`)?.value.trim();
+    return val||'Otro';
+  }
+  return cadena;
+}
+
+function resetCadenaSuper(prefix){
+  selCadenaSuper[prefix]='Mercadona';
+  const btns=document.querySelectorAll(`#${prefix}-super-cadena .gas-veh`);
+  btns.forEach((b,i)=>b.classList.toggle('active',i===0));
+  const otroInput=document.getElementById(`${prefix}-super-otro`);
+  if(otroInput){otroInput.style.display='none';otroInput.value='';}
+}
+
+function loadCadenaSuper(prefix,cadena){
+  if(!cadena)return;
+  selCadenaSuper[prefix]=cadena;
+  document.querySelectorAll(`#${prefix}-super-cadena .gas-veh`).forEach(b=>{
+    const match=b.textContent.trim().includes(cadena)||cadena==='otro'&&b.textContent.includes('Otra');
+    b.classList.toggle('active',match);
+  });
+  const otroInput=document.getElementById(`${prefix}-super-otro`);
+  if(!CADENAS_SUPER.find(c=>c.id===cadena)){
+    if(otroInput){otroInput.style.display='block';otroInput.value=cadena;}
+    // Mark "Otra" button active
+    document.querySelectorAll(`#${prefix}-super-cadena .gas-veh`).forEach(b=>{
+      if(b.textContent.includes('Otra'))b.classList.add('active');
+    });
+  }
+}
 let catFiltro='mes',vcatFiltro='todo';
 let currentCatId=null;
 
@@ -2792,6 +2859,10 @@ function selectCat(cid,catId,type){
     const gasSecH=document.getElementById('gh-gasolina-section');
     if(gasSecH)gasSecH.style.display=catId==='gasolina'?'':'none';
     if(catId!=='gasolina')resetGasFields('gh');
+    // Supermercado section
+    const superSecH=document.getElementById('gh-super-section');
+    if(superSecH)superSecH.style.display=catId==='supermercado'?'':'none';
+    if(catId!=='supermercado')resetCadenaSuper('gh');
   } else {
     highlightCat(cid,catId,type);
     const lugarSection=document.getElementById('gv-lugar-section');
