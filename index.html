@@ -1819,7 +1819,9 @@ function openDetalle(tipo, id, viajeId){
       <button onclick="closeModal('modal-detalle')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.2);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center">✕</button>
       <div style="font-size:2.5rem;margin-bottom:.5rem">${cat.icon}</div>
       <div style="font-size:2rem;font-weight:900;letter-spacing:-.02em">${fmtEur(g.importe)}</div>
-      <div style="font-size:.75rem;font-weight:700;opacity:.75;margin-top:3px;text-transform:uppercase;letter-spacing:.08em">${cat.label}</div>`;
+      <div style="font-size:.75rem;font-weight:700;opacity:.75;margin-top:3px;text-transform:uppercase;letter-spacing:.08em">
+        ${g.cadena?g.cadena+' · ':g.vehiculo?g.vehiculo.toUpperCase()+' · ':''}${cat.label}
+      </div>`;
   }
 
   // Body rows
