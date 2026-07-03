@@ -1791,7 +1791,7 @@ function openDetalle(tipo, id, viajeId){
   }
   if(!g)return;
 
-  const cat=getCatAll(g.categoria||'otros');
+  const cat=tipo==='viaje'?getCat(CAT_VIAJE,g.categoria||'otros'):getCatAll(g.categoria||'otros');
   const quien=FAMILY.find(f=>f.id===(g.quien||g.quien_pago))?.name||'?';
   const canEdit=currentRole==='admin'||((g.quien||g.quien_pago)===currentUser?.id);
 
