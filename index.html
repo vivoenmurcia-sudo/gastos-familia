@@ -2217,8 +2217,10 @@ async function leerTicketIA(prefix){
     const hoy=todayISO();
     const isSuper=isHogar&&(selCatH==='supermercado');
     const prompt=isSuper
-      ?'Analiza este ticket de supermercado. Responde SOLO con JSON sin texto extra: {"importe":0.00,"descripcion":"nombre establecimiento","fecha":"YYYY-MM-DD","categoria":"supermercado","cadena":"nombre supermercado o null","productos":[{"nombre":"producto","precio_unitario":0.00,"cantidad":1,"precio_total":0.00}]}. Sin fecha usa "'+hoy+'". Importe=total final. Extrae TODOS los productos que veas.'
-      :'Analiza este ticket. Responde SOLO con JSON: {"importe":0.00,"descripcion":"establecimiento","fecha":"YYYY-MM-DD","categoria":"una_de:'+cats.join(',')+(isHogar?'","cadena":"supermercado_o_null"':'"')+'}. Sin fecha usa "'+hoy+'". Importe=total final.';
+      ?`Eres un experto en leer tickets de supermercado. Analiza la imagen del ticket y extrae TODA la información. Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin bloques de código. El JSON debe tener este formato exacto:
+{"importe":29.91,"descripcion":"Mercadona","fecha":"2026-07-04","categoria":"supermercado","cadena":"Mercadona","productos":[{"nombre":"LECHE ENTERA 1L","precio_unitario":0.89,"cantidad":1,"precio_total":0.89},{"nombre":"PAN INTEGRAL","precio_unitario":1.25,"cantidad":2,"precio_total":2.50}]}
+IMPORTANTE: El campo "productos" debe incluir TODOS los artículos del ticket línea por línea. Si un producto tiene cantidad mayor que 1, refleja la cantidad. El importe es el TOTAL del ticket. Sin fecha visible usa "${hoy}".`
+      :`Analiza este ticket. Responde SOLO con JSON sin texto extra: {"importe":0.00,"descripcion":"establecimiento","fecha":"YYYY-MM-DD","categoria":"una_de:${cats.join(',')}${isHogar?'","cadena":"supermercado_o_null"':'"'}}. Sin fecha usa "${hoy}". Importe=total final.`;
 
     // Modelos actuales disponibles (1.5 y 2.0 apagados en junio 2026)
     const modelos=[
@@ -2244,8 +2246,11 @@ async function leerTicketIA(prefix){
     const data=await resp.json();
     if(data.error)throw new Error(data.error.message||'Error de API');
     const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    const m=text.match(/\{[\s\S]*\}/);
-    if(!m)throw new Error('Respuesta inesperada: '+text.substring(0,100));
+    console.log('🤖 Respuesta IA:', text.substring(0,800));
+    // Limpiar bloques de código markdown si los hay
+    const cleanText=text.replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim();
+    const m=cleanText.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('La IA no devolvió JSON. Respuesta: '+text.substring(0,80));
     const r=JSON.parse(m[0]);
     if(r.importe)document.getElementById(`${prefix}-imp`).value=parseFloat(r.importe).toFixed(2);
     if(r.descripcion)document.getElementById(`${prefix}-desc`).value=r.descripcion;
