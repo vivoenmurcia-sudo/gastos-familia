@@ -654,6 +654,16 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       </div>
       <input type="text" class="finput" id="gh-super-otro" placeholder="Nombre del supermercado..." style="display:none">
     </div>
+    <!-- KM COCHE — solo categoría Coche -->
+    <div class="fg" id="gh-km-section" style="display:none">
+      <label class="flabel">🚗 Control de kilómetros <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+      <div class="gas-veh-row" id="gh-km-veh">
+        <div class="gas-veh active" onclick="selectKmVeh('tiguan',this)">🚙 VW Tiguan</div>
+        <div class="gas-veh" onclick="selectKmVeh('golf',this)">🚗 VW Golf</div>
+      </div>
+      <input type="number" class="finput" id="gh-km-actual" placeholder="Km actuales del odómetro (ej: 87543)" min="0" step="1" oninput="calcKmDiff()" style="margin-top:6px">
+      <div id="gh-km-diff" style="font-size:.75rem;color:#22c55e;font-weight:700;margin-top:4px;display:none"></div>
+    </div>
     <div class="frow">
       <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="gh-fecha"></div>
       <div class="fg"><label class="flabel">Quién pagó</label>
@@ -856,6 +866,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
           <span>📈 Últimos 6 meses</span>
           <div style="display:flex;gap:6px">
             ${currentCatId==='supermercado'?'<button class="export-btn" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0" onclick="openPreciosSuper()">📋 Ver precios</button>':''}
+            ${currentCatId==='coche'?'<button class="export-btn" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe" onclick="openKmCoches()">🚗 Ver km</button>':''}
             <button class="export-btn" id="catd-export-btn" onclick="exportCategoriaPDF()">📄 PDF</button>
           </div>
         </div>
@@ -936,6 +947,27 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     </div>
     <div class="mfooter">
       <button class="btn btn-cancel" onclick="closeModal('modal-gas-stats')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL KM COCHES -->
+<div class="modal-ov" id="modal-km-coches">
+  <div class="modal-box" style="max-height:92vh">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🚗 Kilómetros recorridos</div>
+    <div class="gas-filter-row">
+      <div class="gas-filter-btn active" onclick="setKmFilter('todos',this)">🚗 Todos</div>
+      <div class="gas-filter-btn" onclick="setKmFilter('tiguan',this)">🚙 Tiguan</div>
+      <div class="gas-filter-btn" onclick="setKmFilter('golf',this)">🚗 Golf</div>
+    </div>
+    <div class="gas-stat-grid" id="km-stat-cards"></div>
+    <div class="card" style="padding:.85rem;margin-bottom:.85rem">
+      <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">📋 Historial</div>
+      <div id="km-historial"></div>
+    </div>
+    <div class="mfooter">
+      <button class="btn btn-cancel" onclick="closeModal('modal-km-coches')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2058,6 +2090,13 @@ function openGHModal(editId){
   if(superSecH)superSecH.style.display=selCatH==='supermercado'?'':'none';
   resetCadenaSuper('gh');
   if(editId&&hogarData[editId]&&hogarData[editId].cadena)loadCadenaSuper('gh',hogarData[editId].cadena);
+  // Km coche
+  const kmSecH=document.getElementById('gh-km-section');
+  if(kmSecH)kmSecH.style.display=selCatH==='coche'?'':'none';
+  const kmEl=document.getElementById('gh-km-actual');if(kmEl)kmEl.value='';
+  const kmDiff=document.getElementById('gh-km-diff');if(kmDiff)kmDiff.style.display='none';
+  selKmVeh='tiguan';
+  document.querySelectorAll('#gh-km-veh .gas-veh').forEach((b,i)=>b.classList.toggle('active',i===0));
   highlightCat('gh-cat',selCatH,'h');
   openModal('modal-gh');
   setTimeout(()=>document.getElementById('gh-imp').focus(),320);
@@ -2102,6 +2141,8 @@ async function saveGastoHogar(){
         toast('✅ Gasto añadido');
       }
     }
+    // Guardar km si categoría es Coche
+    if(selCatH==='coche')await saveKmCoche(fecha).catch(()=>{});
     closeModal('modal-gh');
   }catch(e){console.error(e);toast('❌ Error al guardar');}
   finally{setUploading('gh',false);}
@@ -2247,10 +2288,10 @@ IMPORTANTE: El campo "productos" debe incluir TODOS los artículos del ticket l�
     if(data.error)throw new Error(data.error.message||'Error de API');
     const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
     console.log('🤖 Respuesta IA:', text.substring(0,800));
-    // Limpiar bloques de código markdown si los hay
-    const cleanText=text.replace(/```json\n?/gi,'').replace(/```\n?/g,'').trim();
-    const m=cleanText.match(/\{[\s\S]*\}/);
-    if(!m)throw new Error('La IA no devolvió JSON. Respuesta: '+text.substring(0,80));
+    // Eliminar todos los backticks y bloques markdown
+    const stripped=text.replace(/`{1,3}json\s*/gi,'').replace(/`{1,3}/g,'').trim();
+    const m=stripped.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error('Sin JSON válido. IA devolvió: '+text.substring(0,60));
     const r=JSON.parse(m[0]);
     if(r.importe)document.getElementById(`${prefix}-imp`).value=parseFloat(r.importe).toFixed(2);
     if(r.descripcion)document.getElementById(`${prefix}-desc`).value=r.descripcion;
@@ -2280,6 +2321,125 @@ IMPORTANTE: El campo "productos" debe incluir TODOS los artículos del ticket l�
     toast('❌ '+e.message);
   }
   finally{btn.disabled=false;btn.innerHTML='✨ Leer ticket con IA — rellenar automáticamente';}
+}
+
+// ══ KILÓMETROS COCHES ══
+let selKmVeh='tiguan';
+let kmFilterVeh='todos';
+let kmCache={};
+
+function selectKmVeh(veh,btn){
+  selKmVeh=veh;
+  document.querySelectorAll('#gh-km-veh .gas-veh').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  calcKmDiff();
+}
+
+async function calcKmDiff(){
+  const kmEl=document.getElementById('gh-km-actual');
+  const diffEl=document.getElementById('gh-km-diff');
+  const kmActual=parseFloat(kmEl?.value||0);
+  if(!kmActual||!selKmVeh){diffEl.style.display='none';return;}
+  // Obtener último registro de este vehículo
+  const data=await dbGet(`config_gastos/km_coches/${selKmVeh}`)||{};
+  const registros=Object.values(data).sort((a,b)=>b.timestamp-a.timestamp);
+  if(registros.length>0){
+    const ultimo=registros[0];
+    const diff=kmActual-ultimo.km_actual;
+    if(diff>0){
+      diffEl.textContent=`+${diff.toLocaleString()} km desde el ${fmtDate(ultimo.fecha)} (${ultimo.km_actual.toLocaleString()} km)`;
+      diffEl.style.color='#22c55e';
+    } else if(diff<0){
+      diffEl.textContent=`⚠️ Menor que el último registro (${ultimo.km_actual.toLocaleString()} km)`;
+      diffEl.style.color='#ef4444';
+    } else {
+      diffEl.textContent=`Sin cambios desde ${fmtDate(ultimo.fecha)}`;
+      diffEl.style.color='#94a3b8';
+    }
+    diffEl.style.display='block';
+  } else {
+    diffEl.textContent='📍 Primer registro para este vehículo';
+    diffEl.style.color='#3b82f6';
+    diffEl.style.display='block';
+  }
+}
+
+async function saveKmCoche(fecha){
+  const kmEl=document.getElementById('gh-km-actual');
+  const km=parseFloat(kmEl?.value||0);
+  if(!km||km<=0)return;
+  const data=await dbGet(`config_gastos/km_coches/${selKmVeh}`)||{};
+  const registros=Object.values(data).sort((a,b)=>b.timestamp-a.timestamp);
+  const kmAnterior=registros.length>0?registros[0].km_actual:null;
+  const registro={
+    vehiculo:selKmVeh,
+    km_actual:km,
+    km_recorridos:kmAnterior?km-kmAnterior:null,
+    fecha:fecha||todayISO(),
+    timestamp:Date.now()
+  };
+  await dbPush(`config_gastos/km_coches/${selKmVeh}`,registro);
+}
+
+async function openKmCoches(){
+  openModal('modal-km-coches');
+  document.getElementById('km-stat-cards').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:1rem;color:#94a3b8">⏳ Cargando...</div>';
+  const tiguan=Object.values(await dbGet('config_gastos/km_coches/tiguan')||{}).sort((a,b)=>b.timestamp-a.timestamp);
+  const golf=Object.values(await dbGet('config_gastos/km_coches/golf')||{}).sort((a,b)=>b.timestamp-a.timestamp);
+  kmCache={tiguan,golf};
+  renderKmStats();
+}
+
+function setKmFilter(veh,btn){
+  kmFilterVeh=veh;
+  document.querySelectorAll('#modal-km-coches .gas-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderKmStats();
+}
+
+function renderKmStats(){
+  const {tiguan=[],golf=[]}=kmCache;
+  const getData=(arr)=>({
+    ultimo:arr[0]||null,
+    totalKm:arr.reduce((s,r)=>s+(r.km_recorridos||0),0),
+    count:arr.length
+  });
+  const t=getData(tiguan),g=getData(golf);
+
+  // Cards
+  const cards=document.getElementById('km-stat-cards');
+  if(kmFilterVeh==='todos'){
+    cards.innerHTML=`
+      <div class="gas-stat-card"><div class="val">${t.ultimo?t.ultimo.km_actual.toLocaleString():'—'}</div><div class="lbl">🚙 Tiguan km</div></div>
+      <div class="gas-stat-card"><div class="val">${g.ultimo?g.ultimo.km_actual.toLocaleString():'—'}</div><div class="lbl">🚗 Golf km</div></div>
+      <div class="gas-stat-card"><div class="val">${t.totalKm.toLocaleString()}</div><div class="lbl">Km Tiguan total</div></div>
+      <div class="gas-stat-card"><div class="val">${g.totalKm.toLocaleString()}</div><div class="lbl">Km Golf total</div></div>`;
+  } else {
+    const d=kmFilterVeh==='tiguan'?t:g;
+    const label=kmFilterVeh==='tiguan'?'🚙 Tiguan':'🚗 Golf';
+    cards.innerHTML=`
+      <div class="gas-stat-card"><div class="val">${d.ultimo?d.ultimo.km_actual.toLocaleString():'—'}</div><div class="lbl">${label} km actuales</div></div>
+      <div class="gas-stat-card"><div class="val">${d.totalKm.toLocaleString()}</div><div class="lbl">Km registrados</div></div>
+      <div class="gas-stat-card"><div class="val">${d.count}</div><div class="lbl">Registros</div></div>
+      <div class="gas-stat-card"><div class="val">${d.count>1?Math.round(d.totalKm/(d.count-1)).toLocaleString()+'km':'—'}</div><div class="lbl">Media por entrada</div></div>`;
+  }
+
+  // Historial
+  const lista=(kmFilterVeh==='todos'?[...tiguan.map(r=>({...r,_veh:'tiguan'})),...golf.map(r=>({...r,_veh:'golf'}))]:
+    (kmFilterVeh==='tiguan'?tiguan:golf).map(r=>({...r,_veh:kmFilterVeh}))).sort((a,b)=>b.timestamp-a.timestamp);
+
+  const hist=document.getElementById('km-historial');
+  if(!lista.length){hist.innerHTML='<div class="empty" style="padding:1rem"><div class="et">Sin registros aún</div><div class="es">Añade un gasto de Coche con km para empezar</div></div>';return;}
+  hist.innerHTML=lista.map(r=>{
+    const veh=r._veh==='tiguan'?'🚙 Tiguan':'🚗 Golf';
+    return`<div class="gas-hist-row">
+      <div style="flex:1">
+        <div style="font-size:.82rem;font-weight:700">${fmtDate(r.fecha)} · ${veh}</div>
+        <div style="font-size:.7rem;color:#94a3b8">${r.km_actual.toLocaleString()} km odómetro${r.km_recorridos?` · +${r.km_recorridos.toLocaleString()} km recorridos`:''}</div>
+      </div>
+      <div style="font-size:.9rem;font-weight:900;color:#6366f1">${r.km_actual.toLocaleString()} km</div>
+    </div>`;
+  }).join('');
 }
 
 // ══ PRECIOS SUPERMERCADO ══
@@ -3099,6 +3259,10 @@ function selectCat(cid,catId,type){
     const superSecH=document.getElementById('gh-super-section');
     if(superSecH)superSecH.style.display=catId==='supermercado'?'':'none';
     if(catId!=='supermercado')resetCadenaSuper('gh');
+    // Km coche
+    const kmSecH=document.getElementById('gh-km-section');
+    if(kmSecH)kmSecH.style.display=catId==='coche'?'':'none';
+    if(catId!=='coche'){const el=document.getElementById('gh-km-actual');if(el)el.value='';const d=document.getElementById('gh-km-diff');if(d)d.style.display='none';}
   } else {
     highlightCat(cid,catId,type);
     const lugarSection=document.getElementById('gv-lugar-section');
