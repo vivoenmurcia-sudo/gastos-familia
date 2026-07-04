@@ -378,7 +378,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 .gas-veh-row{display:flex;gap:8px;margin-bottom:.75rem}
 .gas-veh{flex:1;padding:10px 8px;border:2px solid #e2e8f0;border-radius:12px;background:white;cursor:pointer;font-size:.78rem;font-weight:700;color:#64748b;text-align:center;transition:all .18s}
 .gas-veh.active{border-color:#f59e0b;background:#fffbeb;color:#b45309}
-.gas-stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.65rem;margin-bottom:.85rem}
+
 .gas-stat-card{background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:.8rem;text-align:center}
 .gas-stat-card .val{font-size:1.3rem;font-weight:900;color:#92400e}
 .gas-stat-card .lbl{font-size:.65rem;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
@@ -680,6 +680,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <div class="photo-size-info" id="gh-info"></div>
         <button class="photo-rm" id="gh-rm" onclick="rmPhoto('gh');event.stopPropagation()">✕</button>
       </div>
+
     </div>
     <!-- Foto del restaurante — solo para categoría Restaurante -->
     <div class="fg" id="gh-lugar-section" style="display:none">
@@ -780,6 +781,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <div class="photo-size-info" id="gv-info"></div>
         <button class="photo-rm" id="gv-rm" onclick="rmPhoto('gv');event.stopPropagation()">✕</button>
       </div>
+
     </div>
     <!-- Foto del lugar — solo para Comidas y Actividades (igual que hogar-restaurante) -->
     <div class="fg" id="gv-lugar-section" style="display:none">
@@ -1136,6 +1138,7 @@ async function confirmCrop(){
         document.getElementById(`${cropPrefix}-ph`).style.display='none';
         document.getElementById(`${cropPrefix}-rm`).style.display='flex';
         document.getElementById(`${cropPrefix}-pz`).classList.add('has-photo');
+
       };r.readAsDataURL(file);
       // size info
       const compressed=await compressImg(file).catch(()=>null);
@@ -2149,7 +2152,6 @@ function getTripImgUrl(nombre='',destino=''){
   }
   return null;
 }
-// ══ GASOLINA ══
 const VEHICULOS=[{id:'tiguan',label:'VW Tiguan',icon:'🚙'},{id:'golf',label:'VW Golf',icon:'🚗'}];
 let selVehiculo={gh:'tiguan',gv:'tiguan'};
 let chartGasPrecio=null;
