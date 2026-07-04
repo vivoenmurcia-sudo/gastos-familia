@@ -625,44 +625,38 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     <div class="budget-warn" id="budget-warn-box"></div>
     <div class="fg"><label class="flabel">Descripción</label>
       <input type="text" class="finput" id="gh-desc" placeholder="Ej: Mercadona, gasolina..."></div>
-    <div class="fg"><label class="flabel">Nota <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+    <!-- NOTA — oculta en gasolina, visible en resto -->
+    <div class="fg" id="gh-nota-section">
+      <label class="flabel">Nota <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
       <textarea class="ftextarea" id="gh-nota" placeholder="Ej: Precio especial, cumpleaños, compartido con..."></textarea></div>
-    <div class="fg" id="gh-gasolina-section" style="display:none">
-      <label class="flabel">⛽ Datos del repostaje</label>
-      <div class="gas-veh-row" id="gh-gas-veh">
-        <div class="gas-veh active" onclick="selectVehiculo('gh','tiguan',this)">🚙 VW Tiguan</div>
-        <div class="gas-veh" onclick="selectVehiculo('gh','golf',this)">🚗 VW Golf</div>
+    <!-- GASOLINA: vehículo arriba, aplica a todos los campos -->
+    <div id="gh-gasolina-section" style="display:none">
+      <!-- Selector vehículo — arriba de todo -->
+      <div class="fg">
+        <label class="flabel">🚗 Vehículo</label>
+        <div class="gas-veh-row" id="gh-gas-veh">
+          <div class="gas-veh active" onclick="selectVehiculo('gh','tiguan',this);selKmVeh='tiguan'">🚙 VW Tiguan</div>
+          <div class="gas-veh" onclick="selectVehiculo('gh','golf',this);selKmVeh='golf'">🚗 VW Golf</div>
+        </div>
       </div>
-      <div class="frow">
-        <div class="fg"><label class="flabel">Litros</label>
-          <input type="number" class="finput" id="gh-litros" placeholder="0.00" step="0.01" min="0" oninput="calcGasImporte('gh')"></div>
-        <div class="fg"><label class="flabel">€ / Litro</label>
-          <input type="number" class="finput" id="gh-precio-litro" placeholder="1.500" step="0.001" min="0" oninput="calcGasImporte('gh')"></div>
+      <!-- Datos repostaje -->
+      <div class="fg"><label class="flabel">⛽ Datos del repostaje</label>
+        <div class="frow" style="margin-top:4px">
+          <div class="fg"><label class="flabel">Litros</label>
+            <input type="number" class="finput" id="gh-litros" placeholder="0.00" step="0.01" min="0" oninput="calcGasImporte('gh')"></div>
+          <div class="fg"><label class="flabel">€ / Litro</label>
+            <input type="number" class="finput" id="gh-precio-litro" placeholder="1.500" step="0.001" min="0" oninput="calcGasImporte('gh')"></div>
+        </div>
       </div>
+      <!-- Gasolinera en lugar de nota -->
       <div class="fg"><label class="flabel">Gasolinera <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
         <input type="text" class="finput" id="gh-gasolinera" placeholder="Ej: Repsol, BP, Cepsa..."></div>
-    </div>
-    <!-- SUPERMERCADO — selector de cadena -->
-    <div class="fg" id="gh-super-section" style="display:none">
-      <label class="flabel">🛒 Cadena de supermercado</label>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px" id="gh-super-cadena">
-        <div class="gas-veh active" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','Mercadona',this)">🟢 Mercadona</div>
-        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','Lidl',this)">🔵 Lidl</div>
-        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','Carrefour',this)">🟠 Carrefour</div>
-        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','DIA',this)">🔴 DIA</div>
-        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','otro',this)">✏️ Otra</div>
+      <!-- Km — usa el mismo vehículo seleccionado arriba -->
+      <div class="fg">
+        <label class="flabel">🗺️ Kilómetros <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+        <input type="number" class="finput" id="gh-km-actual" placeholder="Km actuales del odómetro (ej: 87543)" min="0" step="1" oninput="calcKmDiff()">
+        <div id="gh-km-diff" style="font-size:.75rem;color:#22c55e;font-weight:700;margin-top:4px;display:none"></div>
       </div>
-      <input type="text" class="finput" id="gh-super-otro" placeholder="Nombre del supermercado..." style="display:none">
-    </div>
-    <!-- KM COCHE — solo categoría Coche -->
-    <div class="fg" id="gh-km-section" style="display:none">
-      <label class="flabel">🚗 Control de kilómetros <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
-      <div class="gas-veh-row" id="gh-km-veh">
-        <div class="gas-veh active" onclick="selectKmVeh('tiguan',this)">🚙 VW Tiguan</div>
-        <div class="gas-veh" onclick="selectKmVeh('golf',this)">🚗 VW Golf</div>
-      </div>
-      <input type="number" class="finput" id="gh-km-actual" placeholder="Km actuales del odómetro (ej: 87543)" min="0" step="1" oninput="calcKmDiff()" style="margin-top:6px">
-      <div id="gh-km-diff" style="font-size:.75rem;color:#22c55e;font-weight:700;margin-top:4px;display:none"></div>
     </div>
     <div class="frow">
       <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="gh-fecha"></div>
@@ -2292,7 +2286,14 @@ IMPORTANTE: El campo "productos" debe incluir TODOS los artículos del ticket l�
     const stripped=text.replace(/`{1,3}json\s*/gi,'').replace(/`{1,3}/g,'').trim();
     const m=stripped.match(/\{[\s\S]*\}/);
     if(!m)throw new Error('Sin JSON válido. IA devolvió: '+text.substring(0,60));
-    const r=JSON.parse(m[0]);
+    let r;
+    try{r=JSON.parse(m[0]);}
+    catch(e1){
+      // Limpiar caracteres especiales y comas finales
+      const clean=m[0].replace(/[\u0000-\u001F\u007F-\u009F]/g,' ').replace(/,(\s*[}\]])/g,'$1').replace(/([^\\])\\'/g,"$1'");
+      try{r=JSON.parse(clean);}
+      catch(e2){throw new Error('Error al parsear respuesta IA: '+e1.message);}
+    }
     if(r.importe)document.getElementById(`${prefix}-imp`).value=parseFloat(r.importe).toFixed(2);
     if(r.descripcion)document.getElementById(`${prefix}-desc`).value=r.descripcion;
     if(r.fecha)document.getElementById(`${prefix}-fecha`).value=r.fecha;
@@ -3255,13 +3256,16 @@ function selectCat(cid,catId,type){
     const gasSecH=document.getElementById('gh-gasolina-section');
     if(gasSecH)gasSecH.style.display=catId==='gasolina'?'':'none';
     if(catId!=='gasolina')resetGasFields('gh');
+    // Ocultar nota en gasolina, mostrar en el resto
+    const notaSection=document.getElementById('gh-nota-section');
+    if(notaSection)notaSection.style.display=catId==='gasolina'?'none':'';
     // Supermercado section
     const superSecH=document.getElementById('gh-super-section');
     if(superSecH)superSecH.style.display=catId==='supermercado'?'':'none';
     if(catId!=='supermercado')resetCadenaSuper('gh');
-    // Km coche — también aparece en gasolina
+    // Km coche — aparece solo en coche (en gasolina ya está integrado arriba)
     const kmSecH=document.getElementById('gh-km-section');
-    if(kmSecH)kmSecH.style.display=(catId==='coche'||catId==='gasolina')?'':'none';
+    if(kmSecH)kmSecH.style.display=catId==='coche'?'':'none';
     if(catId!=='coche'&&catId!=='gasolina'){const el=document.getElementById('gh-km-actual');if(el)el.value='';const d=document.getElementById('gh-km-diff');if(d)d.style.display='none';}
   } else {
     highlightCat(cid,catId,type);
