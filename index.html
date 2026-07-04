@@ -378,9 +378,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 .gas-veh-row{display:flex;gap:8px;margin-bottom:.75rem}
 .gas-veh{flex:1;padding:10px 8px;border:2px solid #e2e8f0;border-radius:12px;background:white;cursor:pointer;font-size:.78rem;font-weight:700;color:#64748b;text-align:center;transition:all .18s}
 .gas-veh.active{border-color:#f59e0b;background:#fffbeb;color:#b45309}
-.ai-btn{display:flex;align-items:center;gap:6px;width:100%;padding:10px;border:1.5px solid #e0e7ff;border-radius:10px;background:linear-gradient(135deg,#eef2ff,#f5f3ff);cursor:pointer;font-size:.82rem;font-weight:700;color:#4f46e5;margin-top:6px;transition:all .18s}
-.ai-btn:hover{border-color:#4f46e5;background:linear-gradient(135deg,#e0e7ff,#ede9fe)}
-.ai-btn:disabled{opacity:.5;cursor:not-allowed}
+
 
 .gas-stat-card{background:#fffbeb;border:1.5px solid #fde68a;border-radius:12px;padding:.8rem;text-align:center}
 .gas-stat-card .val{font-size:1.3rem;font-weight:900;color:#92400e}
@@ -687,7 +685,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <div class="photo-size-info" id="gh-info"></div>
         <button class="photo-rm" id="gh-rm" onclick="rmPhoto('gh');event.stopPropagation()">✕</button>
       </div>
-      <button class="ai-btn" id="gh-ai-btn" style="display:none" onclick="leerTicketIA('gh')">✨ Leer ticket con IA — rellenar automáticamente</button>
+
 
     </div>
     <!-- Foto del restaurante — solo para categoría Restaurante -->
@@ -789,7 +787,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <div class="photo-size-info" id="gv-info"></div>
         <button class="photo-rm" id="gv-rm" onclick="rmPhoto('gv');event.stopPropagation()">✕</button>
       </div>
-      <button class="ai-btn" id="gv-ai-btn" style="display:none" onclick="leerTicketIA('gv')">✨ Leer ticket con IA — rellenar automáticamente</button>
+
 
     </div>
     <!-- Foto del lugar — solo para Comidas y Actividades (igual que hogar-restaurante) -->
@@ -1195,9 +1193,7 @@ async function confirmCrop(){
         document.getElementById(`${cropPrefix}-ph`).style.display='none';
         document.getElementById(`${cropPrefix}-rm`).style.display='flex';
         document.getElementById(`${cropPrefix}-pz`).classList.add('has-photo');
-        // Mostrar botón IA si hay key configurada
-        const aiBtn=document.getElementById(`${cropPrefix}-ai-btn`);
-        if(aiBtn&&cfgData.gemini_key)aiBtn.style.display='flex';
+
 
       };r.readAsDataURL(file);
       // size info
@@ -2020,19 +2016,7 @@ function renderPresupuestos(){
     CAT_FIJOS.map(c=>`<div class="bitem"><div class="bitem-hdr">${c.icon} ${c.label}</div><div style="display:flex;align-items:center;gap:4px"><input type="number" class="bitem-input" id="bgt-${c.id}" value="${pres[c.id]||''}" placeholder="Sin límite" min="0" step="10"><span style="font-size:.72rem;color:#94a3b8;flex-shrink:0">€/mes</span></div></div>`).join('');
   const generalHtml=`<div style="grid-column:1/-1;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#22c55e;padding:.5rem 0 .25rem;border-bottom:1px solid #e2e8f0;margin-bottom:4px;margin-top:.5rem">🛒 Gastos del día a día</div>`+
     CAT_HOGAR.map(c=>`<div class="bitem"><div class="bitem-hdr">${c.icon} ${c.label}</div><div style="display:flex;align-items:center;gap:4px"><input type="number" class="bitem-input" id="bgt-${c.id}" value="${pres[c.id]||''}" placeholder="Sin límite" min="0" step="10"><span style="font-size:.72rem;color:#94a3b8;flex-shrink:0">€/mes</span></div></div>`).join('');
-  const geminiHtml=`<div style="grid-column:1/-1;font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#4f46e5;padding:.5rem 0 .25rem;border-bottom:1px solid #e2e8f0;margin-bottom:8px;margin-top:.5rem">🤖 IA Gemini — Leer tickets</div>
-  <div style="grid-column:1/-1;display:flex;gap:8px;align-items:center">
-    <input type="password" id="gemini-key-input" value="${cfgData.gemini_key||''}" placeholder="Pega aquí tu API key de Google AI Studio" style="flex:1;border:1.5px solid #e0e7ff;border-radius:10px;padding:9px 12px;font-size:.8rem;font-family:inherit;color:#0f172a">
-    <button onclick="saveGeminiKey()" style="padding:9px 16px;background:#4f46e5;color:white;border:none;border-radius:10px;cursor:pointer;font-size:.8rem;font-weight:700;white-space:nowrap">Guardar</button>
-  </div>
-  <div style="grid-column:1/-1;font-size:.7rem;color:#94a3b8;margin-top:4px">La key se guarda en Firebase — nunca aparece en el código fuente.</div>`;
-  document.getElementById('budget-grid').innerHTML=fijoHtml+generalHtml+geminiHtml;
-}
-async function saveGeminiKey(){
-  const key=document.getElementById('gemini-key-input')?.value.trim();
-  if(!key){toast('⚠️ Introduce la API key');return;}
-  await dbUpd('config_gastos',{gemini_key:key});
-  toast('✅ API key guardada — ya puedes usar la IA');
+  document.getElementById('budget-grid').innerHTML=fijoHtml+generalHtml;
 }
 async function saveBudgets(){
   if(currentRole!=='admin'){toast('⛔ Solo administradores');return;}
@@ -2232,100 +2216,6 @@ function getTripImgUrl(nombre='',destino=''){
     if(t.includes(key))return `https://images.unsplash.com/${id}?auto=format&fit=crop&w=600&h=180&q=70`;
   }
   return null;
-}
-// ══ IA GEMINI — LEER TICKETS ══
-async function leerTicketIA(prefix){
-  const key=cfgData.gemini_key;
-  if(!key){toast('⚠️ Configura la API key en Presupuestos');return;}
-  const file=pendingFile[prefix];
-  if(!file){toast('⚠️ Primero añade la foto del ticket');return;}
-  const btn=document.getElementById(`${prefix}-ai-btn`);
-  btn.disabled=true;btn.innerHTML='⏳ Leyendo ticket...';
-  try{
-    const b64=await new Promise((res,rej)=>{
-      const r=new FileReader();
-      r.onload=e=>res(e.target.result.split(',')[1]);
-      r.onerror=rej;r.readAsDataURL(file);
-    });
-    const isHogar=prefix==='gh';
-    const cats=isHogar?[...CAT_FIJOS,...CAT_HOGAR].map(c=>c.id):CAT_VIAJE.map(c=>c.id);
-    const hoy=todayISO();
-    const isSuper=isHogar&&(selCatH==='supermercado');
-    const prompt=isSuper
-      ?`Eres un experto en leer tickets de supermercado. Analiza la imagen del ticket y extrae TODA la información. Responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin bloques de código. El JSON debe tener este formato exacto:
-{"importe":29.91,"descripcion":"Mercadona","fecha":"2026-07-04","categoria":"supermercado","cadena":"Mercadona","productos":[{"nombre":"LECHE ENTERA 1L","precio_unitario":0.89,"cantidad":1,"precio_total":0.89},{"nombre":"PAN INTEGRAL","precio_unitario":1.25,"cantidad":2,"precio_total":2.50}]}
-IMPORTANTE: El campo "productos" debe incluir TODOS los artículos del ticket línea por línea. Si un producto tiene cantidad mayor que 1, refleja la cantidad. El importe es el TOTAL del ticket. Sin fecha visible usa "${hoy}".`
-      :`Analiza este ticket. Responde SOLO con JSON sin texto extra: {"importe":0.00,"descripcion":"establecimiento","fecha":"YYYY-MM-DD","categoria":"una_de:${cats.join(',')}${isHogar?'","cadena":"supermercado_o_null"':'"'}}. Sin fecha usa "${hoy}". Importe=total final.`;
-
-    // Modelos actuales disponibles (1.5 y 2.0 apagados en junio 2026)
-    const modelos=[
-      {v:'v1beta',m:'gemini-2.5-flash-lite'},
-      {v:'v1beta',m:'gemini-2.5-flash'},
-      {v:'v1beta',m:'gemini-3.1-flash-lite'},
-    ];
-    let resp=null, lastError='';
-    for(const {v,m} of modelos){
-      try{
-        resp=await fetch('https://generativelanguage.googleapis.com/'+v+'/models/'+m+':generateContent?key='+key,{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:'image/jpeg',data:b64}},{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:512}})
-        });
-        if(resp.ok){console.log('✅ Modelo usado:',m);break;}
-        const errData=await resp.json().catch(()=>({}));
-        lastError=m+': HTTP '+resp.status+(errData.error?.message?' — '+errData.error.message.substring(0,80):'');
-        resp=null;
-      }catch(e){lastError=e.message;resp=null;}
-    }
-    if(!resp||!resp.ok)throw new Error(lastError||'No se pudo conectar con Gemini');
-
-    const data=await resp.json();
-    if(data.error)throw new Error(data.error.message||'Error de API');
-    const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
-    console.log('🤖 Respuesta IA:', text.substring(0,800));
-    // Extraer JSON de forma robusta — buscar primer { y último }
-    const jsonStart=text.indexOf('{');
-    const jsonEnd=text.lastIndexOf('}');
-    if(jsonStart===-1||jsonEnd===-1||jsonEnd<jsonStart)
-      throw new Error('Sin JSON en respuesta IA: '+text.substring(0,60));
-    let r;
-    try{
-      r=JSON.parse(text.substring(jsonStart,jsonEnd+1));
-    }catch(e1){
-      // Limpiar caracteres problemáticos y reintentar
-      const clean=text.substring(jsonStart,jsonEnd+1)
-        .replace(/[\u0000-\u001F\u007F-\u009F]/g,' ')
-        .replace(/,(\s*[}\]])/g,'$1');
-      try{r=JSON.parse(clean);}
-      catch(e2){throw new Error('JSON inválido: '+e1.message);}
-    }
-    if(r.importe)document.getElementById(`${prefix}-imp`).value=parseFloat(r.importe).toFixed(2);
-    if(r.descripcion)document.getElementById(`${prefix}-desc`).value=r.descripcion;
-    if(r.fecha)document.getElementById(`${prefix}-fecha`).value=r.fecha;
-    if(r.categoria){
-      if(isHogar){selCatH=r.categoria;highlightCat('gh-cat',selCatH,'h');selectCat('gh-cat',selCatH,'h');}
-      else{selCatV=r.categoria;highlightCat('gv-cat',selCatV,'v');selectCat('gv-cat',selCatV,'v');}
-    }
-    if(r.cadena&&isHogar)loadCadenaSuper('gh',r.cadena);
-
-    // Guardar productos si es supermercado
-    if(isHogar&&r.categoria==='supermercado'&&r.productos&&r.productos.length>0){
-      const ticketData={
-        fecha:r.fecha||hoy,
-        cadena:r.cadena||selCadenaSuper.gh||'Otro',
-        total:r.importe||0,
-        productos:r.productos,
-        timestamp:Date.now()
-      };
-      await dbPush('config_gastos/precios_tickets',ticketData).catch(()=>{});
-      toast('✅ Formulario rellenado — '+r.productos.length+' productos guardados');
-    } else {
-      toast('✅ Formulario rellenado — revisa los datos');
-    }
-  }catch(e){
-    console.error('Error IA:',e);
-    toast('❌ '+e.message);
-  }
-  finally{btn.disabled=false;btn.innerHTML='✨ Leer ticket con IA — rellenar automáticamente';}
 }
 
 // ══ KILÓMETROS COCHES ══
