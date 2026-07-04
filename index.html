@@ -2191,17 +2191,18 @@ async function leerTicketIA(prefix){
     const hoy=todayISO();
     const prompt='Analiza este ticket. Responde SOLO con JSON: {"importe":0.00,"descripcion":"establecimiento","fecha":"YYYY-MM-DD","categoria":"una_de:'+cats.join(',')+(isHogar?'","cadena":"supermercado_o_null"':'"')+'}. Sin fecha usa "'+hoy+'". Importe=total final.';
 
-    // Intentar con gemini-1.5-flash (más compatible con capa gratuita)
-    const modelos=['gemini-1.5-flash','gemini-2.0-flash-lite','gemini-2.0-flash'];
+    // Modelos gratuitos de Google AI Studio (sin facturación)
+    const modelos=['gemini-1.5-flash-8b','gemini-1.5-flash','gemini-1.5-pro'];
     let resp=null, lastError='';
     for(const modelo of modelos){
       try{
         resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+modelo+':generateContent?key='+key,{
           method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:'image/jpeg',data:b64}},{text:prompt}]}]})
+          body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:'image/jpeg',data:b64}},{text:prompt}]}],generationConfig:{temperature:0.1,maxOutputTokens:512}})
         });
-        if(resp.ok)break;
-        lastError='Modelo '+modelo+': HTTP '+resp.status;
+        if(resp.ok){console.log('✅ Modelo usado:',modelo);break;}
+        const errData=await resp.json().catch(()=>({}));
+        lastError='Modelo '+modelo+': HTTP '+resp.status+(errData.error?.message?' ('+errData.error.message+')':'');
         resp=null;
       }catch(e){lastError=e.message;resp=null;}
     }
