@@ -864,9 +864,9 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       <div class="card" style="margin-bottom:.85rem;padding:.85rem">
         <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">
           <span>📈 Últimos 6 meses</span>
-          <div style="display:flex;gap:6px">
-            ${currentCatId==='supermercado'?'<button class="export-btn" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0" onclick="openPreciosSuper()">📋 Ver precios</button>':''}
-            ${currentCatId==='coche'?'<button class="export-btn" style="background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe" onclick="openKmCoches()">🚗 Ver km</button>':''}
+          <div style="display:flex;gap:6px" id="catd-action-btns">
+            <button class="export-btn" id="catd-precios-btn" style="display:none;background:#f0fdf4;color:#15803d;border-color:#bbf7d0" onclick="openPreciosSuper()">📋 Ver precios</button>
+            <button class="export-btn" id="catd-km-btn" style="display:none;background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe" onclick="openKmCoches()">🚗 Ver km</button>
             <button class="export-btn" id="catd-export-btn" onclick="exportCategoriaPDF()">📄 PDF</button>
           </div>
         </div>
@@ -2141,8 +2141,8 @@ async function saveGastoHogar(){
         toast('✅ Gasto añadido');
       }
     }
-    // Guardar km si categoría es Coche
-    if(selCatH==='coche')await saveKmCoche(fecha).catch(()=>{});
+    // Guardar km si categoría es Coche o Gasolina
+    if(selCatH==='coche'||selCatH==='gasolina')await saveKmCoche(fecha).catch(()=>{});
     closeModal('modal-gh');
   }catch(e){console.error(e);toast('❌ Error al guardar');}
   finally{setUploading('gh',false);}
@@ -3259,10 +3259,10 @@ function selectCat(cid,catId,type){
     const superSecH=document.getElementById('gh-super-section');
     if(superSecH)superSecH.style.display=catId==='supermercado'?'':'none';
     if(catId!=='supermercado')resetCadenaSuper('gh');
-    // Km coche
+    // Km coche — también aparece en gasolina
     const kmSecH=document.getElementById('gh-km-section');
-    if(kmSecH)kmSecH.style.display=catId==='coche'?'':'none';
-    if(catId!=='coche'){const el=document.getElementById('gh-km-actual');if(el)el.value='';const d=document.getElementById('gh-km-diff');if(d)d.style.display='none';}
+    if(kmSecH)kmSecH.style.display=(catId==='coche'||catId==='gasolina')?'':'none';
+    if(catId!=='coche'&&catId!=='gasolina'){const el=document.getElementById('gh-km-actual');if(el)el.value='';const d=document.getElementById('gh-km-diff');if(d)d.style.display='none';}
   } else {
     highlightCat(cid,catId,type);
     const lugarSection=document.getElementById('gv-lugar-section');
@@ -3314,9 +3314,13 @@ let chartCatD=null;
 async function openCatDetalle(catId){
   currentCatId=catId;
   catFiltro='mes';
-  // Reset filter pills
   document.querySelectorAll('#catd-date-filters .df-pill').forEach((b,i)=>{b.classList.toggle('active',i===0);});
   document.getElementById('catd-range-inputs').style.display='none';
+  // Mostrar botones según categoría
+  const preciosBtn=document.getElementById('catd-precios-btn');
+  const kmBtn=document.getElementById('catd-km-btn');
+  if(preciosBtn)preciosBtn.style.display=catId==='supermercado'?'flex':'none';
+  if(kmBtn)kmBtn.style.display=(catId==='coche'||catId==='gasolina')?'flex':'none';
   const cat=getCatAll(catId);
   const entries=Object.values(hogarData).filter(g=>g.categoria===catId).sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1);
   const total=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
