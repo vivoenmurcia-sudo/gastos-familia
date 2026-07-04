@@ -835,7 +835,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
 
 <!-- MODAL DETALLE GASTO -->
 <div class="modal-ov" id="modal-detalle">
-  <div class="modal-box" style="padding:0;overflow:hidden">
+  <div class="modal-box" style="padding:0">
     <!-- Header coloreado -->
     <div id="detalle-header" style="padding:1.5rem 1.25rem 1rem;color:white;position:relative">
       <button onclick="closeModal('modal-detalle')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.2);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center">✕</button>
@@ -3190,6 +3190,13 @@ function openGVModal(editId){
     const enlaceElNew=document.getElementById('gv-enlace');
     if(enlaceElNew)enlaceElNew.value='';
   }
+  // Asegurar visibilidad de secciones según categoría actual
+  const ubicFinal=document.getElementById('gv-ubicacion-section');
+  if(ubicFinal)ubicFinal.style.display=(selCatV==='alojamiento'||selCatV==='actividades')?'':'none';
+  const enlaceFinal=document.getElementById('gv-enlace-section');
+  if(enlaceFinal)enlaceFinal.style.display=(selCatV==='actividades'||selCatV==='alojamiento')?'':'none';
+  const lugarFinal=document.getElementById('gv-lugar-section');
+  if(lugarFinal)lugarFinal.style.display=(selCatV==='comidas'||selCatV==='actividades'||selCatV==='alojamiento')?'':'none';
   highlightCat('gv-cat',selCatV,'v');openModal('modal-gv');
 }
 
