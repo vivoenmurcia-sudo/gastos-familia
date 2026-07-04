@@ -854,7 +854,10 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       <div class="card" style="margin-bottom:.85rem;padding:.85rem">
         <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">
           <span>📈 Últimos 6 meses</span>
-          <button class="export-btn" id="catd-export-btn" onclick="exportCategoriaPDF()">📄 PDF</button>
+          <div style="display:flex;gap:6px">
+            ${currentCatId==='supermercado'?'<button class="export-btn" style="background:#f0fdf4;color:#15803d;border-color:#bbf7d0" onclick="openPreciosSuper()">📋 Ver precios</button>':''}
+            <button class="export-btn" id="catd-export-btn" onclick="exportCategoriaPDF()">📄 PDF</button>
+          </div>
         </div>
         <div style="height:100px;position:relative"><canvas id="catd-chart"></canvas></div>
       </div>
@@ -933,6 +936,29 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     </div>
     <div class="mfooter">
       <button class="btn btn-cancel" onclick="closeModal('modal-gas-stats')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRECIOS SUPERMERCADO -->
+<div class="modal-ov" id="modal-precios-super">
+  <div class="modal-box" style="max-height:92vh">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📋 Evolución de precios</div>
+    <!-- Filtros -->
+    <div style="display:flex;gap:6px;margin-bottom:.75rem;flex-wrap:wrap">
+      <input type="text" id="precio-search" placeholder="🔍 Buscar producto..." class="search-input" style="flex:1;min-width:0" oninput="filterPrecios()">
+      <select id="precio-cadena-filter" class="sort-select" onchange="filterPrecios()">
+        <option value="">Todas las cadenas</option>
+        <option value="Mercadona">Mercadona</option>
+        <option value="Lidl">Lidl</option>
+        <option value="Carrefour">Carrefour</option>
+        <option value="DIA">DIA</option>
+      </select>
+    </div>
+    <div id="precios-content"></div>
+    <div class="mfooter">
+      <button class="btn btn-cancel" onclick="closeModal('modal-precios-super')">Cerrar</button>
     </div>
   </div>
 </div>
@@ -2189,7 +2215,10 @@ async function leerTicketIA(prefix){
     const isHogar=prefix==='gh';
     const cats=isHogar?[...CAT_FIJOS,...CAT_HOGAR].map(c=>c.id):CAT_VIAJE.map(c=>c.id);
     const hoy=todayISO();
-    const prompt='Analiza este ticket. Responde SOLO con JSON: {"importe":0.00,"descripcion":"establecimiento","fecha":"YYYY-MM-DD","categoria":"una_de:'+cats.join(',')+(isHogar?'","cadena":"supermercado_o_null"':'"')+'}. Sin fecha usa "'+hoy+'". Importe=total final.';
+    const isSuper=isHogar&&(selCatH==='supermercado');
+    const prompt=isSuper
+      ?'Analiza este ticket de supermercado. Responde SOLO con JSON sin texto extra: {"importe":0.00,"descripcion":"nombre establecimiento","fecha":"YYYY-MM-DD","categoria":"supermercado","cadena":"nombre supermercado o null","productos":[{"nombre":"producto","precio_unitario":0.00,"cantidad":1,"precio_total":0.00}]}. Sin fecha usa "'+hoy+'". Importe=total final. Extrae TODOS los productos que veas.'
+      :'Analiza este ticket. Responde SOLO con JSON: {"importe":0.00,"descripcion":"establecimiento","fecha":"YYYY-MM-DD","categoria":"una_de:'+cats.join(',')+(isHogar?'","cadena":"supermercado_o_null"':'"')+'}. Sin fecha usa "'+hoy+'". Importe=total final.';
 
     // Modelos actuales disponibles (1.5 y 2.0 apagados en junio 2026)
     const modelos=[
@@ -2226,12 +2255,78 @@ async function leerTicketIA(prefix){
       else{selCatV=r.categoria;highlightCat('gv-cat',selCatV,'v');selectCat('gv-cat',selCatV,'v');}
     }
     if(r.cadena&&isHogar)loadCadenaSuper('gh',r.cadena);
-    toast('✅ Formulario rellenado — revisa los datos');
+
+    // Guardar productos si es supermercado
+    if(isHogar&&r.categoria==='supermercado'&&r.productos&&r.productos.length>0){
+      const ticketData={
+        fecha:r.fecha||hoy,
+        cadena:r.cadena||selCadenaSuper.gh||'Otro',
+        total:r.importe||0,
+        productos:r.productos,
+        timestamp:Date.now()
+      };
+      await dbPush('config_gastos/precios_tickets',ticketData).catch(()=>{});
+      toast('✅ Formulario rellenado — '+r.productos.length+' productos guardados');
+    } else {
+      toast('✅ Formulario rellenado — revisa los datos');
+    }
   }catch(e){
     console.error('Error IA:',e);
     toast('❌ '+e.message);
   }
   finally{btn.disabled=false;btn.innerHTML='✨ Leer ticket con IA — rellenar automáticamente';}
+}
+
+// ══ PRECIOS SUPERMERCADO ══
+let preciosData=[];
+
+async function openPreciosSuper(){
+  openModal('modal-precios-super');
+  document.getElementById('precios-content').innerHTML='<div style="text-align:center;padding:2rem;color:#94a3b8">⏳ Cargando precios...</div>';
+  const data=await dbGet('config_gastos/precios_tickets')||{};
+  preciosData=Object.values(data).sort((a,b)=>b.timestamp-a.timestamp);
+  filterPrecios();
+}
+
+function filterPrecios(){
+  const search=(document.getElementById('precio-search')?.value||'').toLowerCase();
+  const cadena=document.getElementById('precio-cadena-filter')?.value||'';
+  const tickets=preciosData.filter(t=>!cadena||t.cadena===cadena);
+  const productos={};
+  tickets.forEach(t=>{
+    (t.productos||[]).forEach(p=>{
+      const key=(p.nombre||'').toLowerCase().trim();
+      if(!key)return;
+      if(!productos[key])productos[key]={nombre:p.nombre,registros:[]};
+      productos[key].registros.push({fecha:t.fecha,cadena:t.cadena,precio:parseFloat(p.precio_unitario||p.precio||0)});
+    });
+  });
+  let lista=Object.values(productos).filter(p=>!search||p.nombre.toLowerCase().includes(search));
+  lista.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  const el=document.getElementById('precios-content');
+  if(!lista.length){
+    el.innerHTML='<div class="empty" style="padding:2rem"><div class="ei">🛒</div><div class="et">Sin productos registrados</div><div class="es">Lee tickets con la IA para ver los precios</div></div>';
+    return;
+  }
+  el.innerHTML=lista.map(p=>{
+    const regs=p.registros.sort((a,b)=>b.fecha>a.fecha?1:-1);
+    const ultimo=regs[0];
+    const variacion=regs.length>1?((ultimo.precio-regs[regs.length-1].precio)/regs[regs.length-1].precio*100).toFixed(1):null;
+    const varColor=variacion===null?'#94a3b8':parseFloat(variacion)>0?'#ef4444':parseFloat(variacion)<0?'#22c55e':'#94a3b8';
+    return`<div style="border:0.5px solid #e2e8f0;border-radius:12px;padding:.75rem;margin-bottom:.6rem">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="font-size:.85rem;font-weight:800;flex:1">${esc(p.nombre)}</div>
+        <div style="text-align:right;flex-shrink:0;margin-left:8px">
+          <div style="font-size:1rem;font-weight:900">${ultimo.precio.toFixed(2)}€</div>
+          ${variacion!==null?`<div style="font-size:.68rem;font-weight:700;color:${varColor}">${parseFloat(variacion)>0?'▲':'▼'} ${Math.abs(variacion)}%</div>`:''}
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">
+        ${regs.slice(0,4).map(r=>`<span style="font-size:.65rem;background:#f8fafc;padding:2px 8px;border-radius:20px;color:#64748b">${esc(r.cadena)} · ${fmtDate(r.fecha)} · ${r.precio.toFixed(2)}€</span>`).join('')}
+        ${regs.length>4?`<span style="font-size:.65rem;color:#94a3b8">+${regs.length-4} más</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
 }
 
 const VEHICULOS=[{id:'tiguan',label:'VW Tiguan',icon:'🚙'},{id:'golf',label:'VW Golf',icon:'🚗'}];
