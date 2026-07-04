@@ -1584,7 +1584,7 @@ function renderHGastos(){
     const cat=getCatAll(g.categoria);
     const quien=FAMILY.find(f=>f.id===g.quien)?.name||'?';
     const canEdit=currentRole==='admin'||(g.quien===currentUser?.id);
-    return`<div class="gasto-item" onclick="openDetalle('hogar','${id}')">
+    return`<div class="gasto-item" onclick="openDetalle('hogar','${id}')" style="border-left:4px solid ${cat.color}">
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
         <div class="gasto-desc">
@@ -1594,7 +1594,7 @@ function renderHGastos(){
         ${g.cadena&&!g.descripcion?`<div style="font-size:.7rem;color:#94a3b8;margin-top:1px">🛒 Supermercado</div>`:''}
         ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
-          ${g.foto_url?'<span class="photo-badge">📸</span>':''}
+          ${g.foto_url?`<span class="photo-badge" onclick="openLb('${g.foto_url}');event.stopPropagation()" style="cursor:pointer" title="Ver ticket">📸</span>`:''}
           ${g.recurrente?'<span class="rec-badge">🔄</span>':''}
         </div>
       </div>
@@ -2738,11 +2738,11 @@ function renderCatDetalleLista(){
 
   document.getElementById('catd-lista').innerHTML=cadenaHtml+(filtered.length
     ?'<div class="gasto-list">'+filtered.map(g=>{const quien=FAMILY.find(f=>f.id===g.quien)?.name||'?';
-      return`<div class="gasto-item" onclick="closeModal('modal-cat-detalle');setTimeout(()=>openDetalle('hogar','${g._key}'),200)">
+      return`<div class="gasto-item" onclick="closeModal('modal-cat-detalle');setTimeout(()=>openDetalle('hogar','${g._key}'),200)" style="border-left:4px solid ${cat.color}">
         <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
         <div class="gasto-body">
           <div class="gasto-desc">${g.cadena?`<span style="font-weight:900">${esc(g.cadena)}</span>`:esc(g.descripcion||cat.label)}</div>
-          <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}${g.foto_url?'<span class="photo-badge">📸</span>':''}</div>
+          <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}${g.foto_url?`<span class="photo-badge" onclick="openLb('${g.foto_url}');event.stopPropagation()" style="cursor:pointer">📸</span>`:''}</div>
         </div>
         <div class="gasto-right"><div class="gasto-importe">${fmtEur(g.importe)}</div></div>
       </div>`;}).join('')+'</div>'
@@ -2951,14 +2951,14 @@ function renderVGastos(id){
     const cat=getCat(CAT_VIAJE,g.categoria);
     const quien=FAMILY.find(f=>f.id===g.quien_pago)?.name||g.quien_pago||'?';
     const canEdit=currentRole==='admin'||(g.quien_pago===currentUser?.id);
-    return`<div class="gasto-item" onclick="openDetalle('viaje','${gid}','${currentViaje}')">
+    return`<div class="gasto-item" onclick="openDetalle('viaje','${gid}','${currentViaje}')" style="border-left:4px solid ${cat.color}">
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
         <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
         ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>Paga: ${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
-          ${g.foto_url?'<span class="photo-badge">📸</span>':''}
-          ${g.foto_lugar_url?'<span class="photo-badge" style="background:#fdf4ff;color:#9333ea">🖼️</span>':''}
+          ${g.foto_url?`<span class="photo-badge" onclick="openLb('${g.foto_url}');event.stopPropagation()" style="cursor:pointer" title="Ver ticket">📸</span>`:''}
+          ${g.foto_lugar_url?`<span class="photo-badge" onclick="openLb('${g.foto_lugar_url}');event.stopPropagation()" style="background:#fdf4ff;color:#9333ea;cursor:pointer" title="Ver foto del lugar">🖼️</span>`:''}
           ${g.enlace?'<span class="photo-badge" style="background:#eff6ff;color:#1d4ed8">🔗</span>':''}
         </div>
       </div>
