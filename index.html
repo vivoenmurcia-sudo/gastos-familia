@@ -763,6 +763,10 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     <div class="fg" id="gv-enlace-section" style="display:none">
       <label class="flabel" id="gv-enlace-lbl">🔗 Enlace <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
       <input type="url" class="finput" id="gv-enlace" placeholder="https://..."></div>
+    <!-- UBICACIÓN — solo Alojamiento -->
+    <div class="fg" id="gv-ubicacion-section" style="display:none">
+      <label class="flabel">📍 Ubicación <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+      <input type="text" class="finput" id="gv-ubicacion" placeholder="Ej: Hotel Ritz, Madrid o dirección completa..."></div>
     <div class="fg" id="gv-gasolina-section" style="display:none">
       <label class="flabel">⛽ Datos del repostaje</label>
       <div class="gas-veh-row" id="gv-gas-veh">
@@ -1061,7 +1065,7 @@ const CAT_HOGAR=[
   {id:'colegio',     icon:'🎓',label:'Colegio',      color:'#f59e0b'},
   {id:'restaurante', icon:'🍽️',label:'Restaurante',  color:'#f97316'},
   {id:'ropa',        icon:'👕',label:'Ropa',         color:'#ec4899'},
-  {id:'ocio',        icon:'🎭',label:'Ocio',         color:'#8b5cf6'},
+  {id:'ocio',        icon:'🎭🎡',label:'Ocio',         color:'#8b5cf6'},
   {id:'otros',       icon:'📦',label:'Otros',        color:'#94a3b8'},
 ];
 const ALL_CATS=[...CAT_FIJOS,...CAT_HOGAR];
@@ -1070,8 +1074,8 @@ function getCatAll(id){return ALL_CATS.find(c=>c.id===id)||CAT_HOGAR[CAT_HOGAR.l
 const CAT_VIAJE=[
   {id:'transporte',  icon:'✈️', label:'Transporte',  color:'#3b82f6'},
   {id:'alojamiento', icon:'🏨',label:'Alojamiento', color:'#8b5cf6'},
-  {id:'comidas',     icon:'🍽️',label:'Comidas',     color:'#f97316'},
-  {id:'actividades', icon:'🎡',label:'Actividades', color:'#22c55e'},
+  {id:'comidas',     icon:'🍽️',label:'Restaurante',  color:'#f97316'},
+  {id:'actividades', icon:'🎭🎡',label:'Ocio',        color:'#22c55e'},
   {id:'compras',     icon:'🛍️',label:'Compras',     color:'#ec4899'},
   {id:'gasolina',    icon:'⛽',label:'Gasolina',    color:'#f59e0b'},
   {id:'supermercado',icon:'🛒',label:'Supermercado',color:'#10b981'},
@@ -1906,6 +1910,8 @@ function openDetalle(tipo, id, viajeId){
   // Enlace como botón especial
   const enlaceTxt=cat.id==='alojamiento'?'🏨 Ver hotel / reserva':'🎟️ Ver entradas / reserva';
   const enlaceHtml=g.enlace?`<a href="${esc(g.enlace)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:.75rem;background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;color:#1d4ed8;text-decoration:none;font-size:.82rem;font-weight:700;margin-top:.5rem">${enlaceTxt} <span style="margin-left:auto;font-size:.85rem">→</span></a>`:'';
+  const mapsUrl=g.ubicacion?`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(g.ubicacion)}`:'';
+  const ubicHtml=g.ubicacion?`<a href="${mapsUrl}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;padding:.75rem;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;color:#15803d;text-decoration:none;font-size:.82rem;font-weight:700;margin-top:.5rem">📍 ${esc(g.ubicacion)} <span style="margin-left:auto;font-size:.85rem">→</span></a>`:'';
   document.getElementById('detalle-body').innerHTML=rows.map(r=>`
     <div class="detalle-row">
       <div class="detalle-row-icon">${r.icon}</div>
@@ -1913,7 +1919,7 @@ function openDetalle(tipo, id, viajeId){
         <div class="detalle-row-lbl">${r.lbl}</div>
         <div class="detalle-row-val">${esc(r.val)}</div>
       </div>
-    </div>`).join('')+(enlaceHtml||'');
+    </div>`).join('')+(enlaceHtml||'')+(ubicHtml||'');
 
   // Ticket abajo — solo si hay foto y no es la misma que ya se muestra en el header
   const fotoDiv=document.getElementById('detalle-foto');
@@ -3094,6 +3100,11 @@ function openGVModal(editId){
     }
     const enlaceEl=document.getElementById('gv-enlace');
     if(enlaceEl)enlaceEl.value=editId?g.enlace||'':'';
+    // Ubicación
+    const ubicSecEdit=document.getElementById('gv-ubicacion-section');
+    if(ubicSecEdit)ubicSecEdit.style.display=(selCatV==='alojamiento'||selCatV==='actividades')?'':'none';
+    const ubicEl=document.getElementById('gv-ubicacion');
+    if(ubicEl)ubicEl.value=editId?g.ubicacion||'':'';
     // Actualizar label según categoría cargada
     const lugarLbl=document.querySelector('#gv-lugar-section .flabel');
     const lugarIco=document.querySelector('#gvl-ph .photo-ph-icon');
@@ -3131,7 +3142,8 @@ async function saveGastoViaje(){
       foto_lugar_url=res.url;foto_lugar_path=res.path;
     }
     const enlace=document.getElementById('gv-enlace')?.value.trim()||null;
-    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,enlace:enlace||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatV==='gasolina'?getGasData('gv'):{}),timestamp:Date.now()};
+    const ubicacion=document.getElementById('gv-ubicacion')?.value.trim()||null;
+    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,enlace:enlace||null,ubicacion:ubicacion||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatV==='gasolina'?getGasData('gv'):{}),timestamp:Date.now()};
     if(editGVId){await dbUpd(`gastos_viajes/${currentViaje}/gastos/${editGVId}`,data);toast('✅ Gasto actualizado');}
     else{await dbPush(`gastos_viajes/${currentViaje}/gastos`,data);toast('✅ Gasto añadido');}
     closeModal('modal-gv');
@@ -3197,6 +3209,10 @@ function selectCat(cid,catId,type){
     if(catId==='actividades'&&enlaceLbl)enlaceLbl.innerHTML='🎟️ Enlace de entradas <span style="color:#cbd5e1;font-weight:400">(opcional)</span>';
     if(catId==='alojamiento'&&enlaceLbl)enlaceLbl.innerHTML='🏨 Web del hotel / reserva <span style="color:#cbd5e1;font-weight:400">(opcional)</span>';
     if(catId!=='actividades'&&catId!=='alojamiento'&&enlaceInput)enlaceInput.value='';
+    // Ubicación — alojamiento y ocio
+    const ubicSection=document.getElementById('gv-ubicacion-section');
+    if(ubicSection)ubicSection.style.display=(catId==='alojamiento'||catId==='actividades')?'':'none';
+    if(catId!=='alojamiento'&&catId!=='actividades'){const u=document.getElementById('gv-ubicacion');if(u)u.value='';}
   }
   if(type!=='v')checkBudgetWarn();
 }
