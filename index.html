@@ -941,6 +941,19 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       <div class="gas-filter-btn" onclick="setGasFilter('tiguan',this)">🚙 Tiguan</div>
       <div class="gas-filter-btn" onclick="setGasFilter('golf',this)">🚗 Golf</div>
     </div>
+    <!-- Filtro por fecha -->
+    <div class="date-filter-pills" id="gas-date-filters" style="margin-bottom:.6rem">
+      <div class="df-pill active" onclick="setGasDateFilter('todo',this)">📆 Todo</div>
+      <div class="df-pill" onclick="setGasDateFilter('anyo',this)">🗓️ Este año</div>
+      <div class="df-pill" onclick="setGasDateFilter('6meses',this)">📅 6 meses</div>
+      <div class="df-pill" onclick="setGasDateFilter('mes',this)">📅 Este mes</div>
+      <div class="df-pill" onclick="setGasDateFilter('rango',this)">🔎 Rango</div>
+    </div>
+    <div class="date-range-inputs" id="gas-range-inputs" style="display:none">
+      <input type="date" id="gas-date-start" onchange="setGasDateFilter('rango',null)">
+      <span>→</span>
+      <input type="date" id="gas-date-end" onchange="setGasDateFilter('rango',null)">
+    </div>
     <div class="gas-stat-grid" id="gas-stat-cards"></div>
     <div class="card" style="margin-bottom:.85rem;padding:.85rem">
       <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">
@@ -2456,6 +2469,47 @@ function getGasData(prefix){
 }
 
 // ══ STATS GASOLINA ══
+let gasDateFilter='todo';
+
+function setGasDateFilter(filtro, btn){
+  gasDateFilter=filtro;
+  if(btn){
+    document.querySelectorAll('#gas-date-filters .df-pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  const rangeInputs=document.getElementById('gas-range-inputs');
+  if(rangeInputs)rangeInputs.style.display=filtro==='rango'?'flex':'none';
+  renderGasStats(window._allGasData||[]);
+}
+
+function applyGasDateFilter(data){
+  const hoy=new Date(); hoy.setHours(23,59,59,999);
+  if(gasDateFilter==='todo')return data;
+  if(gasDateFilter==='mes'){
+    const ini=new Date(hoy.getFullYear(),hoy.getMonth(),1);
+    return data.filter(g=>g.fecha&&new Date(g.fecha)>=ini&&new Date(g.fecha)<=hoy);
+  }
+  if(gasDateFilter==='6meses'){
+    const ini=new Date(hoy); ini.setMonth(ini.getMonth()-6);
+    return data.filter(g=>g.fecha&&new Date(g.fecha)>=ini&&new Date(g.fecha)<=hoy);
+  }
+  if(gasDateFilter==='anyo'){
+    const ini=new Date(hoy.getFullYear(),0,1);
+    return data.filter(g=>g.fecha&&new Date(g.fecha)>=ini&&new Date(g.fecha)<=hoy);
+  }
+  if(gasDateFilter==='rango'){
+    const s=document.getElementById('gas-date-start')?.value;
+    const e=document.getElementById('gas-date-end')?.value;
+    return data.filter(g=>{
+      if(!g.fecha)return false;
+      if(s&&g.fecha<s)return false;
+      if(e&&g.fecha>e)return false;
+      return true;
+    });
+  }
+  return data;
+}
+
 function setGasFilter(vehiculo,btn){
   gasFilterVehiculo=vehiculo;
   document.querySelectorAll('#modal-gas-stats .gas-filter-btn').forEach(b=>b.classList.remove('active'));
@@ -2465,6 +2519,10 @@ function setGasFilter(vehiculo,btn){
 
 async function openGasolinaStats(){
   openModal('modal-gas-stats');
+  // Reset filtros
+  gasDateFilter='todo';
+  document.querySelectorAll('#gas-date-filters .df-pill').forEach((b,i)=>b.classList.toggle('active',i===0));
+  const ri=document.getElementById('gas-range-inputs');if(ri)ri.style.display='none';
   toast('⏳ Cargando datos...');
   // Obtener gasolina de todos los meses de hogar
   const allHogar=await dbGet('gastos_hogar')||{};
@@ -2487,7 +2545,8 @@ async function openGasolinaStats(){
 }
 
 function renderGasStats(allData){
-  const data=gasFilterVehiculo==='todos'?allData:allData.filter(g=>g.vehiculo===gasFilterVehiculo);
+  const byVeh=gasFilterVehiculo==='todos'?allData:allData.filter(g=>g.vehiculo===gasFilterVehiculo);
+  const data=applyGasDateFilter(byVeh);
   const total=data.reduce((s,g)=>s+parseFloat(g.importe||0),0);
   const litros=data.reduce((s,g)=>s+parseFloat(g.litros||0),0);
   const precios=data.filter(g=>g.precio_litro>0).map(g=>parseFloat(g.precio_litro));
@@ -3120,6 +3179,16 @@ function openGVModal(editId){
     document.getElementById('gv-fecha').value=todayISO();
     document.getElementById('gv-quien').value=currentUser?.id||pax[0];selCatV='comidas';
     if(lugarSection)lugarSection.style.display=''; // Comidas por defecto → mostrar
+    // Reset ubicacion para nuevo gasto
+    const ubicSecNew=document.getElementById('gv-ubicacion-section');
+    if(ubicSecNew)ubicSecNew.style.display='none';
+    const ubicElNew=document.getElementById('gv-ubicacion');
+    if(ubicElNew)ubicElNew.value='';
+    // Reset enlace
+    const enlaceSecNew=document.getElementById('gv-enlace-section');
+    if(enlaceSecNew)enlaceSecNew.style.display='none';
+    const enlaceElNew=document.getElementById('gv-enlace');
+    if(enlaceElNew)enlaceElNew.value='';
   }
   highlightCat('gv-cat',selCatV,'v');openModal('modal-gv');
 }
