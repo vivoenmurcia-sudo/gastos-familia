@@ -2190,15 +2190,28 @@ async function leerTicketIA(prefix){
     const cats=isHogar?[...CAT_FIJOS,...CAT_HOGAR].map(c=>c.id):CAT_VIAJE.map(c=>c.id);
     const hoy=todayISO();
     const prompt='Analiza este ticket. Responde SOLO con JSON: {"importe":0.00,"descripcion":"establecimiento","fecha":"YYYY-MM-DD","categoria":"una_de:'+cats.join(',')+(isHogar?'","cadena":"supermercado_o_null"':'"')+'}. Sin fecha usa "'+hoy+'". Importe=total final.';
-    const resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key='+key,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:'image/jpeg',data:b64}},{text:prompt}]}]})
-    });
-    if(!resp.ok)throw new Error('Error '+resp.status);
+
+    // Intentar con gemini-1.5-flash (más compatible con capa gratuita)
+    const modelos=['gemini-1.5-flash','gemini-2.0-flash-lite','gemini-2.0-flash'];
+    let resp=null, lastError='';
+    for(const modelo of modelos){
+      try{
+        resp=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+modelo+':generateContent?key='+key,{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({contents:[{parts:[{inline_data:{mime_type:'image/jpeg',data:b64}},{text:prompt}]}]})
+        });
+        if(resp.ok)break;
+        lastError='Modelo '+modelo+': HTTP '+resp.status;
+        resp=null;
+      }catch(e){lastError=e.message;resp=null;}
+    }
+    if(!resp||!resp.ok)throw new Error(lastError||'No se pudo conectar con Gemini');
+
     const data=await resp.json();
+    if(data.error)throw new Error(data.error.message||'Error de API');
     const text=data.candidates?.[0]?.content?.parts?.[0]?.text||'';
     const m=text.match(/\{[\s\S]*\}/);
-    if(!m)throw new Error('Sin respuesta');
+    if(!m)throw new Error('Respuesta inesperada: '+text.substring(0,100));
     const r=JSON.parse(m[0]);
     if(r.importe)document.getElementById(`${prefix}-imp`).value=parseFloat(r.importe).toFixed(2);
     if(r.descripcion)document.getElementById(`${prefix}-desc`).value=r.descripcion;
@@ -2209,7 +2222,10 @@ async function leerTicketIA(prefix){
     }
     if(r.cadena&&isHogar)loadCadenaSuper('gh',r.cadena);
     toast('✅ Formulario rellenado — revisa los datos');
-  }catch(e){console.error(e);toast('❌ No se pudo leer el ticket. Rellena manualmente.');}
+  }catch(e){
+    console.error('Error IA:',e);
+    toast('❌ '+e.message);
+  }
   finally{btn.disabled=false;btn.innerHTML='✨ Leer ticket con IA — rellenar automáticamente';}
 }
 
