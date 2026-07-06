@@ -1098,6 +1098,9 @@ const CAT_LEGACY=[
   {id:'seguro_coche',icon:'🚗',label:'Seguro coche',     color:'#f97316'},
   {id:'seguro_medico',icon:'🏥',label:'Seguro médico',   color:'#ef4444'},
 ];
+// IDs que cuentan como "gasto fijo" — incluye las categorías antiguas de seguros
+// para que los gastos ya guardados con esas categorías sigan agrupándose como fijos.
+const FIJO_IDS=[...CAT_FIJOS.map(c=>c.id),...CAT_LEGACY.map(c=>c.id)];
 const CAT_HOGAR=[
   {id:'supermercado',icon:'🛒',label:'Supermercado',color:'#22c55e'},
   {id:'casa',        icon:'🏠',label:'Casa',         color:'#3b82f6'},
@@ -1531,7 +1534,7 @@ function handleFab(){
 // ══ HERO ══
 function updateHero(){
   const entries=Object.values(hogarData);
-  const fijoIds=CAT_FIJOS.map(c=>c.id);
+  const fijoIds=FIJO_IDS;
   const totalFijos=entries.filter(g=>fijoIds.includes(g.categoria)).reduce((s,g)=>s+parseFloat(g.importe||0),0);
   const totalVariables=entries.filter(g=>!fijoIds.includes(g.categoria)).reduce((s,g)=>s+parseFloat(g.importe||0),0);
   const totalHogar=totalFijos+totalVariables;
@@ -1618,7 +1621,7 @@ function renderHGastos(){
   }
 
   // Separar fijos de generales
-  const fijoIds=CAT_FIJOS.map(c=>c.id);
+  const fijoIds=FIJO_IDS;
   const fijoEntries=entries.filter(([,g])=>fijoIds.includes(g.categoria));
   const generalEntries=entries.filter(([,g])=>!fijoIds.includes(g.categoria));
 
@@ -2173,13 +2176,8 @@ function openGHModal(editId){
   document.getElementById('modal-gh-title').textContent=editId?'✏️ Editar gasto':'➕ Nuevo gasto';
   buildCatPicker('gh-cat-fijos',CAT_FIJOS,'h');
   buildCatPicker('gh-cat',CAT_HOGAR,'h');
-  // Si la categoría seleccionada es un fijo, abrir el acordeón
-  const esFijo=CAT_FIJOS.some(c=>c.id===selCatH);
-  const fijoBody=document.getElementById('gh-fijos-body');
-  const fijoArrow=document.getElementById('gh-fijos-body-arrow');
-  if(fijoBody){fijoBody.style.display=esFijo?'block':'none';}
-  if(fijoArrow){fijoArrow.classList.toggle('open',esFijo);}
   rmPhoto('gh');rmPhoto('ghl');document.getElementById('budget-warn-box').style.display='none';
+  let legacyTipoSeguro=null;
   if(editId&&hogarData[editId]){
     const g=hogarData[editId];
     document.getElementById('gh-imp').value=g.importe;
@@ -2189,6 +2187,10 @@ function openGHModal(editId){
     document.getElementById('gh-quien').value=g.quien||'papa';
     document.getElementById('gh-rec').checked=!!g.recurrente;
     selCatH=g.categoria||'supermercado';
+    // Migración suave: los gastos antiguos de "Seguro coche"/"Seguro médico" pasan a la
+    // categoría unificada "Seguros" en cuanto se editan, con su tipo precargado.
+    if(selCatH==='seguro_coche'){selCatH='seguros';legacyTipoSeguro='Coche';}
+    else if(selCatH==='seguro_medico'){selCatH='seguros';legacyTipoSeguro='Médico';}
     if(g.foto_url)loadExistingPhoto('gh',g.foto_url,g.foto_path||null);
     if(g.foto_lugar_url)loadExistingPhoto('ghl',g.foto_lugar_url,g.foto_lugar_path||null);
     const enlaceElEdit=document.getElementById('gh-enlace');
@@ -2208,6 +2210,12 @@ function openGHModal(editId){
     const ubicElNew=document.getElementById('gh-ubicacion');
     if(ubicElNew)ubicElNew.value='';
   }
+  // Si la categoría seleccionada es un fijo, abrir el acordeón (ya con selCatH definitivo)
+  const esFijo=FIJO_IDS.includes(selCatH);
+  const fijoBody=document.getElementById('gh-fijos-body');
+  const fijoArrow=document.getElementById('gh-fijos-body-arrow');
+  if(fijoBody){fijoBody.style.display=esFijo?'block':'none';}
+  if(fijoArrow){fijoArrow.classList.toggle('open',esFijo);}
   const lugarSection=document.getElementById('gh-lugar-section');
   if(lugarSection)lugarSection.style.display=(selCatH==='restaurante'||selCatH==='ocio')?'':'none';
   updateGHLugarLabel(selCatH);
@@ -2229,6 +2237,7 @@ function openGHModal(editId){
   if(seguroSecH)seguroSecH.style.display=selCatH==='seguros'?'':'none';
   resetTipoSeguro('gh');
   if(editId&&hogarData[editId]&&hogarData[editId].tipo_seguro)loadTipoSeguro('gh',hogarData[editId].tipo_seguro);
+  else if(legacyTipoSeguro)loadTipoSeguro('gh',legacyTipoSeguro);
   // Km coche
   const kmSecH=document.getElementById('gh-km-section');
   if(kmSecH)kmSecH.style.display=selCatH==='coche'?'':'none';
@@ -2236,7 +2245,9 @@ function openGHModal(editId){
   const kmDiff=document.getElementById('gh-km-diff');if(kmDiff)kmDiff.style.display='none';
   selKmVeh='tiguan';
   document.querySelectorAll('#gh-km-veh .gas-veh').forEach((b,i)=>b.classList.toggle('active',i===0));
-  highlightCat('gh-cat',selCatH,'h');
+  document.querySelectorAll('#gh-cat .cpick, #gh-cat-fijos .cpick').forEach(b=>b.classList.remove('sel','selv'));
+  document.getElementById(`gh-cat-fijos-${selCatH}`)?.classList.add('sel');
+  document.getElementById(`gh-cat-${selCatH}`)?.classList.add('sel');
   openModal('modal-gh');
   setTimeout(()=>document.getElementById('gh-imp').focus(),320);
 }
@@ -2301,7 +2312,7 @@ async function delGH(id,photoPath,lugarPath=''){
 function exportMes(){
   const entries=Object.values(hogarData).sort((a,b)=>(a.fecha||'')>(b.fecha||'')?1:-1);
   const total=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
-  const fijoIds=CAT_FIJOS.map(c=>c.id);
+  const fijoIds=FIJO_IDS;
   const fijos=entries.filter(g=>fijoIds.includes(g.categoria));
   const generales=entries.filter(g=>!fijoIds.includes(g.categoria));
   const totalFijos=fijos.reduce((s,g)=>s+parseFloat(g.importe||0),0);
