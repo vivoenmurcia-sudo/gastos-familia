@@ -687,6 +687,20 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       </div>
       <input type="text" class="finput" id="gh-super-otro" placeholder="Nombre del supermercado..." style="display:none">
     </div>
+    <!-- SEGUROS — selector de tipo -->
+    <div class="fg" id="gh-seguro-section" style="display:none">
+      <label class="flabel">🛡️ Tipo de seguro</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px" id="gh-seguro-tipo">
+        <div class="gas-veh active" style="flex:none;padding:8px 14px" onclick="selectTipoSeguro('gh','Coche',this)">🚗 Coche</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoSeguro('gh','Hogar',this)">🏠 Hogar</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoSeguro('gh','Médico',this)">🏥 Médico</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoSeguro('gh','Vida',this)">❤️ Vida</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoSeguro('gh','Mascota',this)">🐾 Mascota</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoSeguro('gh','Decesos',this)">🕊️ Decesos</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoSeguro('gh','otro',this)">✏️ Otro</div>
+      </div>
+      <input type="text" class="finput" id="gh-seguro-otro" placeholder="Especifica el tipo de seguro..." style="display:none">
+    </div>
     <div class="frow">
       <div class="fg"><label class="flabel">Fecha</label><input type="date" class="finput" id="gh-fecha"></div>
       <div class="fg"><label class="flabel">Quién pagó</label>
@@ -1074,10 +1088,15 @@ const CAT_FIJOS=[
   {id:'agua',       icon:'💧',label:'Agua',              color:'#3b82f6'},
   {id:'telefono',   icon:'📱',label:'Teléfono móvil',    color:'#8b5cf6'},
   {id:'internet',   icon:'🌐',label:'Internet',          color:'#6366f1'},
-  {id:'seguro_coche',icon:'🚗',label:'Seguro coche',     color:'#f97316'},
-  {id:'seguro_medico',icon:'🏥',label:'Seguro médico',   color:'#ef4444'},
+  {id:'seguros',    icon:'🛡️',label:'Seguros',          color:'#ef4444'},
   {id:'streaming',  icon:'📺',label:'Streaming',         color:'#ec4899'},
   {id:'comunidad',  icon:'🗑️',label:'Comunidad/Basuras', color:'#94a3b8'},
+];
+// Categorías antiguas de seguros — ya no se pueden elegir, pero se mantienen aquí
+// solo para que los gastos ya guardados con estas categorías sigan mostrando su icono/etiqueta correctos.
+const CAT_LEGACY=[
+  {id:'seguro_coche',icon:'🚗',label:'Seguro coche',     color:'#f97316'},
+  {id:'seguro_medico',icon:'🏥',label:'Seguro médico',   color:'#ef4444'},
 ];
 const CAT_HOGAR=[
   {id:'supermercado',icon:'🛒',label:'Supermercado',color:'#22c55e'},
@@ -1091,7 +1110,7 @@ const CAT_HOGAR=[
   {id:'ocio',        icon:'🎭🎡',label:'Ocio',         color:'#8b5cf6'},
   {id:'otros',       icon:'📦',label:'Otros',        color:'#94a3b8'},
 ];
-const ALL_CATS=[...CAT_FIJOS,...CAT_HOGAR];
+const ALL_CATS=[...CAT_FIJOS,...CAT_HOGAR,...CAT_LEGACY];
 function getCatAll(id){return ALL_CATS.find(c=>c.id===id)||CAT_HOGAR[CAT_HOGAR.length-1];}
 
 const CAT_VIAJE=[
@@ -1611,8 +1630,9 @@ function renderHGastos(){
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
         <div class="gasto-desc">
-          ${g.cadena&&!g.descripcion?`<span style="font-weight:900">${g.cadena}</span>`:esc(g.descripcion||cat.label)}
+          ${g.cadena&&!g.descripcion?`<span style="font-weight:900">${g.cadena}</span>`:g.tipo_seguro&&!g.descripcion?`<span style="font-weight:900">🛡️ ${esc(g.tipo_seguro)}</span>`:esc(g.descripcion||cat.label)}
           ${g.cadena&&g.descripcion?`<span style="font-size:.65rem;font-weight:800;padding:1px 7px;border-radius:10px;background:#dcfce7;color:#15803d;margin-left:4px">${g.cadena}</span>`:''}
+          ${g.tipo_seguro&&g.descripcion?`<span style="font-size:.65rem;font-weight:800;padding:1px 7px;border-radius:10px;background:#fef2f2;color:#b91c1c;margin-left:4px">🛡️ ${esc(g.tipo_seguro)}</span>`:''}
         </div>
         ${g.cadena&&!g.descripcion?`<div style="font-size:.7rem;color:#94a3b8;margin-top:1px">🛒 Supermercado</div>`:''}
         ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
@@ -1794,7 +1814,6 @@ function checkBudgetWarn(){
   }else{box.style.display='none';}
 }
 
-// ══ RESUMEN ══
 // ══ RESUMEN: combinar Hogar + Viajes (opcional) ══
 let resumenIncluirViajes=false;
 let resumenCatExcluded=new Set();
@@ -1987,7 +2006,7 @@ function openDetalle(tipo, id, viajeId){
       <button onclick="closeModal('modal-detalle')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.2);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center">✕</button>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:.5rem">
         <div style="font-size:2.2rem">${cat.icon}</div>
-        ${g.cadena?`<div style="font-size:1.3rem;font-weight:900;opacity:.95">${g.cadena}</div>`:g.vehiculo?`<div style="font-size:1.1rem;font-weight:900;opacity:.95">${g.vehiculo==='tiguan'?'VW Tiguan':'VW Golf'}</div>`:''}
+        ${g.cadena?`<div style="font-size:1.3rem;font-weight:900;opacity:.95">${g.cadena}</div>`:g.vehiculo?`<div style="font-size:1.1rem;font-weight:900;opacity:.95">${g.vehiculo==='tiguan'?'VW Tiguan':'VW Golf'}</div>`:g.tipo_seguro?`<div style="font-size:1.2rem;font-weight:900;opacity:.95">🛡️ ${esc(g.tipo_seguro)}</div>`:''}
       </div>
       <div style="font-size:2rem;font-weight:900;letter-spacing:-.02em">${fmtEur(g.importe)}</div>
       <div style="font-size:.75rem;font-weight:700;opacity:.65;margin-top:3px;text-transform:uppercase;letter-spacing:.08em">${cat.label}</div>`;
@@ -2205,6 +2224,11 @@ function openGHModal(editId){
   if(superSecH)superSecH.style.display=selCatH==='supermercado'?'':'none';
   resetCadenaSuper('gh');
   if(editId&&hogarData[editId]&&hogarData[editId].cadena)loadCadenaSuper('gh',hogarData[editId].cadena);
+  // Seguros
+  const seguroSecH=document.getElementById('gh-seguro-section');
+  if(seguroSecH)seguroSecH.style.display=selCatH==='seguros'?'':'none';
+  resetTipoSeguro('gh');
+  if(editId&&hogarData[editId]&&hogarData[editId].tipo_seguro)loadTipoSeguro('gh',hogarData[editId].tipo_seguro);
   // Km coche
   const kmSecH=document.getElementById('gh-km-section');
   if(kmSecH)kmSecH.style.display=selCatH==='coche'?'':'none';
@@ -2239,7 +2263,7 @@ async function saveGastoHogar(){
     }
     const enlace=document.getElementById('gh-enlace')?.value.trim()||null;
     const ubicacion=document.getElementById('gh-ubicacion')?.value.trim()||null;
-    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,enlace:enlace||null,ubicacion:ubicacion||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatH==='gasolina'?getGasData('gh'):{}),...(selCatH==='supermercado'?{cadena:getCadenaData('gh')}:{}),timestamp:Date.now()};
+    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,enlace:enlace||null,ubicacion:ubicacion||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatH==='gasolina'?getGasData('gh'):{}),...(selCatH==='supermercado'?{cadena:getCadenaData('gh')}:{}),...(selCatH==='seguros'?{tipo_seguro:getTipoSeguroData('gh')}:{}),timestamp:Date.now()};
     if(editGHId){
       // Si la fecha cambia de mes, mover a nuevo mes
       if(mesGasto!==mesActual){
@@ -2793,6 +2817,58 @@ function loadCadenaSuper(prefix,cadena){
 }
 let catFiltro='mes',vcatFiltro='todo';
 let currentCatId=null;
+
+// ══ TIPO DE SEGURO ══
+const TIPOS_SEGURO=[
+  {id:'Coche',label:'Coche',icon:'🚗'},
+  {id:'Hogar',label:'Hogar',icon:'🏠'},
+  {id:'Médico',label:'Médico',icon:'🏥'},
+  {id:'Vida',label:'Vida',icon:'❤️'},
+  {id:'Mascota',label:'Mascota',icon:'🐾'},
+  {id:'Decesos',label:'Decesos',icon:'🕊️'},
+];
+let selTipoSeguro={gh:'Coche'};
+
+function selectTipoSeguro(prefix,tipo,btn){
+  selTipoSeguro[prefix]=tipo;
+  document.querySelectorAll(`#${prefix}-seguro-tipo .gas-veh`).forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const otroInput=document.getElementById(`${prefix}-seguro-otro`);
+  if(otroInput)otroInput.style.display=tipo==='otro'?'block':'none';
+}
+
+function getTipoSeguroData(prefix){
+  const tipo=selTipoSeguro[prefix]||'Coche';
+  if(tipo==='otro'){
+    const val=document.getElementById(`${prefix}-seguro-otro`)?.value.trim();
+    return val||'Otro';
+  }
+  return tipo;
+}
+
+function resetTipoSeguro(prefix){
+  selTipoSeguro[prefix]='Coche';
+  const btns=document.querySelectorAll(`#${prefix}-seguro-tipo .gas-veh`);
+  btns.forEach((b,i)=>b.classList.toggle('active',i===0));
+  const otroInput=document.getElementById(`${prefix}-seguro-otro`);
+  if(otroInput){otroInput.style.display='none';otroInput.value='';}
+}
+
+function loadTipoSeguro(prefix,tipo){
+  if(!tipo)return;
+  selTipoSeguro[prefix]=tipo;
+  document.querySelectorAll(`#${prefix}-seguro-tipo .gas-veh`).forEach(b=>{
+    const match=b.textContent.trim().includes(tipo)||tipo==='otro'&&b.textContent.includes('Otro');
+    b.classList.toggle('active',match);
+  });
+  const otroInput=document.getElementById(`${prefix}-seguro-otro`);
+  if(!TIPOS_SEGURO.find(t=>t.id===tipo)){
+    if(otroInput){otroInput.style.display='block';otroInput.value=tipo;}
+    document.querySelectorAll(`#${prefix}-seguro-tipo .gas-veh`).forEach(b=>{
+      if(b.textContent.includes('Otro'))b.classList.add('active');
+    });
+  }
+}
 
 function getDateRangeFilter(filtro,startId,endId){
   const now=new Date(),today=todayISO();
@@ -3358,6 +3434,10 @@ function selectCat(cid,catId,type){
     const superSecH=document.getElementById('gh-super-section');
     if(superSecH)superSecH.style.display=catId==='supermercado'?'':'none';
     if(catId!=='supermercado')resetCadenaSuper('gh');
+    // Seguros section
+    const seguroSecH=document.getElementById('gh-seguro-section');
+    if(seguroSecH)seguroSecH.style.display=catId==='seguros'?'':'none';
+    if(catId!=='seguros')resetTipoSeguro('gh');
     // Km coche — aparece solo en coche (en gasolina ya está integrado arriba)
     const kmSecH=document.getElementById('gh-km-section');
     if(kmSecH)kmSecH.style.display=catId==='coche'?'':'none';
