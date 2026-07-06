@@ -664,6 +664,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','Lidl',this)">🔵 Lidl</div>
         <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','Carrefour',this)">🟠 Carrefour</div>
         <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','DIA',this)">🔴 DIA</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','SuperPlus',this)">🟣 SuperPlus</div>
         <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gh','otro',this)">✏️ Otra</div>
       </div>
       <input type="text" class="finput" id="gh-super-otro" placeholder="Nombre del supermercado..." style="display:none">
@@ -767,6 +768,19 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     <div class="fg" id="gv-ubicacion-section" style="display:none">
       <label class="flabel">📍 Ubicación <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
       <input type="text" class="finput" id="gv-ubicacion" placeholder="Ej: Hotel Ritz, Madrid o dirección completa..."></div>
+    <!-- SUPERMERCADO — selector de cadena (igual que en Hogar) -->
+    <div class="fg" id="gv-super-section" style="display:none">
+      <label class="flabel">🛒 Cadena de supermercado</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px" id="gv-super-cadena">
+        <div class="gas-veh active" style="flex:none;padding:8px 14px" onclick="selectCadena('gv','Mercadona',this)">🟢 Mercadona</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gv','Lidl',this)">🔵 Lidl</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gv','Carrefour',this)">🟠 Carrefour</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gv','DIA',this)">🔴 DIA</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gv','SuperPlus',this)">🟣 SuperPlus</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gv','otro',this)">✏️ Otra</div>
+      </div>
+      <input type="text" class="finput" id="gv-super-otro" placeholder="Nombre del supermercado..." style="display:none">
+    </div>
     <div class="fg" id="gv-gasolina-section" style="display:none">
       <label class="flabel">⛽ Datos del repostaje</label>
       <div class="gas-veh-row" id="gv-gas-veh">
@@ -1007,6 +1021,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <option value="Lidl">Lidl</option>
         <option value="Carrefour">Carrefour</option>
         <option value="DIA">DIA</option>
+        <option value="SuperPlus">SuperPlus</option>
       </select>
     </div>
     <div id="precios-content"></div>
@@ -2689,6 +2704,7 @@ const CADENAS_SUPER=[
   {id:'Mercadona',label:'Mercadona',icon:'🟢'},
   {id:'Lidl',label:'Lidl',icon:'🔵'},
   {id:'Carrefour',label:'Carrefour',icon:'🟠'},
+  {id:'SuperPlus',label:'SuperPlus',icon:'🟣'},
   {id:'DIA',label:'DIA',icon:'🔴'},
 ];
 let selCadenaSuper={gh:'Mercadona'};
@@ -2818,15 +2834,39 @@ function renderVCatDetalleLista(){
   const total=filtered.reduce((s,g)=>s+parseFloat(g.importe||0),0);
   const sub=document.getElementById('vcatd-sub');
   if(sub)sub.textContent=`${esc(v.nombre||'Viaje')} · ${filtered.length} gasto${filtered.length!==1?'s':''} · ${fmtEur(total)}`;
-  document.getElementById('vcatd-lista').innerHTML=filtered.length
+
+  // Desglose por cadena si es supermercado (igual que en Hogar)
+  let cadenaHtml='';
+  if(currentVCatId==='supermercado'&&filtered.length){
+    const byCadena={};
+    filtered.forEach(g=>{const k=g.cadena||'Sin cadena';byCadena[k]=(byCadena[k]||0)+parseFloat(g.importe||0);});
+    const sorted=Object.entries(byCadena).sort((a,b)=>b[1]-a[1]);
+    cadenaHtml=`<div style="margin-bottom:.85rem">
+      <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;color:#64748b;letter-spacing:.06em;margin-bottom:.5rem">🛒 Por cadena</div>
+      ${sorted.map(([k,v])=>{
+        const pct=total>0?Math.round((v/total)*100):0;
+        return`<div style="margin-bottom:.4rem">
+          <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:2px">
+            <span style="font-weight:700">${esc(k)}</span>
+            <span style="font-weight:900">${fmtEur(v)} <span style="color:#94a3b8;font-weight:400">${pct}%</span></span>
+          </div>
+          <div style="background:#f1f5f9;border-radius:99px;height:6px;overflow:hidden">
+            <div style="height:100%;background:#22c55e;border-radius:99px;width:${pct}%"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+
+  document.getElementById('vcatd-lista').innerHTML=cadenaHtml+(filtered.length
     ?'<div class="gasto-list">'+filtered.map(g=>{const quien=FAMILY.find(f=>f.id===g.quien_pago)?.name||'?';
       return`<div class="gasto-item">
         <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
-        <div class="gasto-body"><div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
+        <div class="gasto-body"><div class="gasto-desc">${g.cadena&&!g.descripcion?`<span style="font-weight:900">${esc(g.cadena)}</span>`:esc(g.descripcion||cat.label)}</div>
         <div class="gasto-meta">${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}</div></div>
         <div class="gasto-right"><div class="gasto-importe">${fmtEur(g.importe)}</div></div>
       </div>`;}).join('')+'</div>'
-    :`<div class="empty" style="padding:1.5rem"><div class="ei">${cat.icon}</div><div class="et">Sin gastos en este período</div></div>`;
+    :`<div class="empty" style="padding:1.5rem"><div class="ei">${cat.icon}</div><div class="et">Sin gastos en este período</div></div>`);
 }
 
 let currentVCatId=null,currentVCatViajeId=null;
@@ -3013,9 +3053,9 @@ function renderVGastos(id){
     return`<div class="gasto-item" onclick="openDetalle('viaje','${gid}','${currentViaje}')" style="border-left:4px solid ${cat.color}">
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
-        <div class="gasto-desc">${esc(g.descripcion||cat.label)}</div>
+        <div class="gasto-desc">${g.cadena&&!g.descripcion?`<span style="font-weight:900">${esc(g.cadena)}</span>`:esc(g.descripcion||cat.label)}${g.cadena&&g.descripcion?`<span style="font-size:.65rem;font-weight:800;padding:1px 7px;border-radius:10px;background:#dcfce7;color:#15803d;margin-left:4px">${esc(g.cadena)}</span>`:''}</div>
         ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
-        <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>Paga: ${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
+        <div class="gasto-meta">${g.cadena&&!g.descripcion?'🛒 Supermercado':cat.label}<span style="color:#e2e8f0">·</span>Paga: ${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?`<span class="photo-badge" onclick="openLb('${g.foto_url}');event.stopPropagation()" style="cursor:pointer" title="Ver ticket">📸</span>`:''}
           ${g.foto_lugar_url?`<span class="photo-badge" onclick="openLb('${g.foto_lugar_url}');event.stopPropagation()" style="background:#fdf4ff;color:#9333ea;cursor:pointer" title="Ver foto del lugar">🖼️</span>`:''}
           ${g.enlace?'<span class="photo-badge" style="background:#eff6ff;color:#1d4ed8">🔗</span>':''}
@@ -3149,6 +3189,11 @@ function openGVModal(editId){
     if(gasSecV)gasSecV.style.display=selCatV==='gasolina'?'':'none';
     resetGasFields('gv');
     if(editId&&g.categoria==='gasolina')loadGasFields('gv',g);
+    // Supermercado section
+    const superSecV=document.getElementById('gv-super-section');
+    if(superSecV)superSecV.style.display=selCatV==='supermercado'?'':'none';
+    resetCadenaSuper('gv');
+    if(editId&&g.cadena)loadCadenaSuper('gv',g.cadena);
     // Enlace section
     const enlaceSection=document.getElementById('gv-enlace-section');
     const enlaceLbl=document.getElementById('gv-enlace-lbl');
@@ -3179,6 +3224,9 @@ function openGVModal(editId){
     document.getElementById('gv-fecha').value=todayISO();
     document.getElementById('gv-quien').value=currentUser?.id||pax[0];selCatV='comidas';
     if(lugarSection)lugarSection.style.display=''; // Comidas por defecto → mostrar
+    const superSecNew=document.getElementById('gv-super-section');
+    if(superSecNew)superSecNew.style.display='none';
+    resetCadenaSuper('gv');
     // Reset ubicacion para nuevo gasto
     const ubicSecNew=document.getElementById('gv-ubicacion-section');
     if(ubicSecNew)ubicSecNew.style.display='none';
@@ -3197,6 +3245,8 @@ function openGVModal(editId){
   if(enlaceFinal)enlaceFinal.style.display=(selCatV==='actividades'||selCatV==='alojamiento')?'':'none';
   const lugarFinal=document.getElementById('gv-lugar-section');
   if(lugarFinal)lugarFinal.style.display=(selCatV==='comidas'||selCatV==='actividades'||selCatV==='alojamiento')?'':'none';
+  const superFinal=document.getElementById('gv-super-section');
+  if(superFinal)superFinal.style.display=selCatV==='supermercado'?'':'none';
   highlightCat('gv-cat',selCatV,'v');openModal('modal-gv');
 }
 
@@ -3219,7 +3269,7 @@ async function saveGastoViaje(){
     }
     const enlace=document.getElementById('gv-enlace')?.value.trim()||null;
     const ubicacion=document.getElementById('gv-ubicacion')?.value.trim()||null;
-    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,enlace:enlace||null,ubicacion:ubicacion||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatV==='gasolina'?getGasData('gv'):{}),timestamp:Date.now()};
+    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,enlace:enlace||null,ubicacion:ubicacion||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatV==='gasolina'?getGasData('gv'):{}),...(selCatV==='supermercado'?{cadena:getCadenaData('gv')}:{}),timestamp:Date.now()};
     if(editGVId){await dbUpd(`gastos_viajes/${currentViaje}/gastos/${editGVId}`,data);toast('✅ Gasto actualizado');}
     else{await dbPush(`gastos_viajes/${currentViaje}/gastos`,data);toast('✅ Gasto añadido');}
     closeModal('modal-gv');
@@ -3289,6 +3339,10 @@ function selectCat(cid,catId,type){
     const ubicSection=document.getElementById('gv-ubicacion-section');
     if(ubicSection)ubicSection.style.display=(catId==='alojamiento'||catId==='actividades')?'':'none';
     if(catId!=='alojamiento'&&catId!=='actividades'){const u=document.getElementById('gv-ubicacion');if(u)u.value='';}
+    // Supermercado section
+    const superSecV=document.getElementById('gv-super-section');
+    if(superSecV)superSecV.style.display=catId==='supermercado'?'':'none';
+    if(catId!=='supermercado')resetCadenaSuper('gv');
   }
   if(type!=='v')checkBudgetWarn();
 }
