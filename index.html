@@ -627,6 +627,14 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     <div class="fg" id="gh-nota-section">
       <label class="flabel">Nota <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
       <textarea class="ftextarea" id="gh-nota" placeholder="Ej: Precio especial, cumpleaños, compartido con..."></textarea></div>
+    <!-- ENLACE — solo Ocio (igual que Actividades en Viajes) -->
+    <div class="fg" id="gh-enlace-section" style="display:none">
+      <label class="flabel" id="gh-enlace-lbl">🎟️ Enlace de entradas <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+      <input type="url" class="finput" id="gh-enlace" placeholder="https://..."></div>
+    <!-- UBICACIÓN — solo Ocio (igual que Actividades en Viajes) -->
+    <div class="fg" id="gh-ubicacion-section" style="display:none">
+      <label class="flabel">📍 Ubicación <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+      <input type="text" class="finput" id="gh-ubicacion" placeholder="Ej: nombre del lugar o dirección completa..."></div>
     <!-- GASOLINA: vehículo arriba, aplica a todos los campos -->
     <div id="gh-gasolina-section" style="display:none">
       <!-- Selector vehículo — arriba de todo -->
@@ -740,6 +748,8 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       <div class="fg"><label class="flabel">Fecha fin</label><input type="date" class="finput" id="v-fin"></div>
     </div>
     <div class="fg"><label class="flabel">Presupuesto (€)</label><input type="number" class="finput vf" id="v-presupuesto" placeholder="Sin límite" min="0" step="10"></div>
+    <div class="fg"><label class="flabel">📋 Enlace al plan del viaje <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
+      <input type="url" class="finput vf" id="v-enlace-plan" placeholder="https://docs.google.com/..."></div>
     <div class="fg"><label class="flabel">Participantes</label><div class="pax-grid" id="v-pax"></div></div>
     <div class="mfooter">
       <button class="btn btn-cancel" onclick="closeModal('modal-viaje')">Cancelar</button>
@@ -1598,6 +1608,8 @@ function renderHGastos(){
         ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
         <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?`<span class="photo-badge" onclick="openLb('${g.foto_url}');event.stopPropagation()" style="cursor:pointer" title="Ver ticket">📸</span>`:''}
+          ${g.foto_lugar_url?`<span class="photo-badge" onclick="openLb('${g.foto_lugar_url}');event.stopPropagation()" style="background:#fdf4ff;color:#9333ea;cursor:pointer" title="Ver foto del lugar">🖼️</span>`:''}
+          ${g.enlace?'<span class="photo-badge" style="background:#eff6ff;color:#1d4ed8">🔗</span>':''}
           ${g.recurrente?'<span class="rec-badge">🔄</span>':''}
         </div>
       </div>
@@ -2046,6 +2058,19 @@ async function saveBudgets(){
 }
 
 // ══ GASTO HOGAR MODAL ══
+function updateGHLugarLabel(catId){
+  const lugarLbl=document.querySelector('#gh-lugar-section .flabel');
+  const lugarIco=document.querySelector('#ghl-ph .photo-ph-icon');
+  const lugarTxt=document.querySelector('#ghl-ph .photo-ph-text');
+  if(!lugarLbl||!lugarIco||!lugarTxt)return;
+  if(catId==='ocio'){
+    lugarIco.textContent='🎡';lugarTxt.textContent='Foto de la actividad o lugar';
+    lugarLbl.innerHTML='🎡 Foto de la actividad <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';
+  }else{
+    lugarIco.textContent='🍽️';lugarTxt.textContent='Foto de la fachada o el local';
+    lugarLbl.innerHTML='🍽️ Foto del restaurante <span style="color:#cbd5e1;font-weight:400">(aparece en el header)</span>';
+  }
+}
 function openGHModal(editId){
   editGHId=editId||null;
   document.getElementById('modal-gh-title').textContent=editId?'✏️ Editar gasto':'➕ Nuevo gasto';
@@ -2069,6 +2094,10 @@ function openGHModal(editId){
     selCatH=g.categoria||'supermercado';
     if(g.foto_url)loadExistingPhoto('gh',g.foto_url,g.foto_path||null);
     if(g.foto_lugar_url)loadExistingPhoto('ghl',g.foto_lugar_url,g.foto_lugar_path||null);
+    const enlaceElEdit=document.getElementById('gh-enlace');
+    if(enlaceElEdit)enlaceElEdit.value=g.enlace||'';
+    const ubicElEdit=document.getElementById('gh-ubicacion');
+    if(ubicElEdit)ubicElEdit.value=g.ubicacion||'';
   }else{
     document.getElementById('gh-imp').value='';
     document.getElementById('gh-desc').value='';
@@ -2077,9 +2106,18 @@ function openGHModal(editId){
     document.getElementById('gh-quien').value=currentUser?.id||'papa';
     document.getElementById('gh-rec').checked=false;
     selCatH='supermercado';
+    const enlaceElNew=document.getElementById('gh-enlace');
+    if(enlaceElNew)enlaceElNew.value='';
+    const ubicElNew=document.getElementById('gh-ubicacion');
+    if(ubicElNew)ubicElNew.value='';
   }
   const lugarSection=document.getElementById('gh-lugar-section');
-  if(lugarSection)lugarSection.style.display=selCatH==='restaurante'?'':'none';
+  if(lugarSection)lugarSection.style.display=(selCatH==='restaurante'||selCatH==='ocio')?'':'none';
+  updateGHLugarLabel(selCatH);
+  const enlaceSecH=document.getElementById('gh-enlace-section');
+  if(enlaceSecH)enlaceSecH.style.display=selCatH==='ocio'?'':'none';
+  const ubicSecH=document.getElementById('gh-ubicacion-section');
+  if(ubicSecH)ubicSecH.style.display=selCatH==='ocio'?'':'none';
   const gasSecH=document.getElementById('gh-gasolina-section');
   if(gasSecH)gasSecH.style.display=selCatH==='gasolina'?'':'none';
   resetGasFields('gh');
@@ -2121,7 +2159,9 @@ async function saveGastoHogar(){
       if(foto_lugar_path&&foto_lugar_path!==res.path)await delPhoto(foto_lugar_path);
       foto_lugar_url=res.url;foto_lugar_path=res.path;
     }
-    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatH==='gasolina'?getGasData('gh'):{}),...(selCatH==='supermercado'?{cadena:getCadenaData('gh')}:{}),timestamp:Date.now()};
+    const enlace=document.getElementById('gh-enlace')?.value.trim()||null;
+    const ubicacion=document.getElementById('gh-ubicacion')?.value.trim()||null;
+    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,enlace:enlace||null,ubicacion:ubicacion||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatH==='gasolina'?getGasData('gh'):{}),...(selCatH==='supermercado'?{cadena:getCadenaData('gh')}:{}),timestamp:Date.now()};
     if(editGHId){
       // Si la fecha cambia de mes, mover a nuevo mes
       if(mesGasto!==mesActual){
@@ -2957,6 +2997,7 @@ function renderVDetail(id){
         <span class="vchip">📅 ${fmtDate(v.fecha_inicio)||'—'} — ${fmtDate(v.fecha_fin)||'—'}</span>
         ${budget>0?`<span class="vchip">💶 ${fmtEur(budget)}</span>`:''}
         <span class="vchip">💳 ${fmtEur(spent)}</span>
+        ${v.enlace_plan?`<a href="${esc(v.enlace_plan)}" target="_blank" rel="noopener" class="vchip" style="background:rgba(255,255,255,.3);text-decoration:none;font-weight:800;cursor:pointer">📋 Ver plan del viaje →</a>`:''}
       </div>
       ${budget>0?`<div class="vp-row"><span>${Math.round(pct)}% del presupuesto</span><span class="vp-spent">${fmtEur(spent)} / ${fmtEur(budget)}</span></div>
       <div class="tbar-wrap"><div class="tbar${pct>=100?' over':''}" style="width:${pct}%"></div></div>`:''}
@@ -3057,9 +3098,10 @@ function openViajeModal(editId){
     document.getElementById('v-nombre').value=v.nombre||'';document.getElementById('v-destino').value=v.destino||'';
     document.getElementById('v-inicio').value=v.fecha_inicio||'';document.getElementById('v-fin').value=v.fecha_fin||'';
     document.getElementById('v-presupuesto').value=v.presupuesto||'';
+    document.getElementById('v-enlace-plan').value=v.enlace_plan||'';
     (v.participantes||[]).forEach(pid=>document.getElementById(`vp-${pid}`)?.classList.add('sel'));
   }else{
-    ['v-nombre','v-destino','v-inicio','v-fin','v-presupuesto'].forEach(id=>document.getElementById(id).value='');
+    ['v-nombre','v-destino','v-inicio','v-fin','v-presupuesto','v-enlace-plan'].forEach(id=>document.getElementById(id).value='');
     FAMILY.forEach(f=>document.getElementById(`vp-${f.id}`)?.classList.add('sel'));
   }
   openModal('modal-viaje');
@@ -3071,7 +3113,7 @@ async function saveViaje(){
   if(!nombre){toast('⚠️ Escribe el nombre del viaje');return;}
   const pax=FAMILY.filter(f=>document.getElementById(`vp-${f.id}`)?.classList.contains('sel')).map(f=>f.id);
   if(!pax.length){toast('⚠️ Selecciona al menos un participante');return;}
-  const data={nombre,destino:document.getElementById('v-destino').value.trim(),fecha_inicio:document.getElementById('v-inicio').value,fecha_fin:document.getElementById('v-fin').value,presupuesto:parseFloat(document.getElementById('v-presupuesto').value)||0,participantes:pax,timestamp:Date.now()};
+  const data={nombre,destino:document.getElementById('v-destino').value.trim(),fecha_inicio:document.getElementById('v-inicio').value,fecha_fin:document.getElementById('v-fin').value,presupuesto:parseFloat(document.getElementById('v-presupuesto').value)||0,enlace_plan:document.getElementById('v-enlace-plan').value.trim()||null,participantes:pax,timestamp:Date.now()};
   if(editVId){await dbUpd(`gastos_viajes/${editVId}`,data);toast('✅ Viaje actualizado');}
   else{await dbPush('gastos_viajes',data);toast('✅ Viaje creado');}
   closeModal('modal-viaje');
@@ -3218,8 +3260,16 @@ function selectCat(cid,catId,type){
     document.getElementById(`gh-cat-fijos-${catId}`)?.classList.add('sel');
     document.getElementById(`gh-cat-${catId}`)?.classList.add('sel');
     const lugarSection=document.getElementById('gh-lugar-section');
-    if(lugarSection)lugarSection.style.display=catId==='restaurante'?'':'none';
-    if(catId!=='restaurante')rmPhoto('ghl');
+    if(lugarSection)lugarSection.style.display=(catId==='restaurante'||catId==='ocio')?'':'none';
+    if(catId!=='restaurante'&&catId!=='ocio')rmPhoto('ghl');
+    updateGHLugarLabel(catId);
+    // Enlace y ubicación — solo Ocio
+    const enlaceSecH=document.getElementById('gh-enlace-section');
+    if(enlaceSecH)enlaceSecH.style.display=catId==='ocio'?'':'none';
+    if(catId!=='ocio'){const e=document.getElementById('gh-enlace');if(e)e.value='';}
+    const ubicSecH=document.getElementById('gh-ubicacion-section');
+    if(ubicSecH)ubicSecH.style.display=catId==='ocio'?'':'none';
+    if(catId!=='ocio'){const u=document.getElementById('gh-ubicacion');if(u)u.value='';}
     const gasSecH=document.getElementById('gh-gasolina-section');
     if(gasSecH)gasSecH.style.display=catId==='gasolina'?'':'none';
     if(catId!=='gasolina')resetGasFields('gh');
