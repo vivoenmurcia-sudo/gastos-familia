@@ -530,6 +530,10 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
       </div>
 
       <div id="hogar-resumen" style="display:none">
+        <div class="ftoggle-row" style="margin-bottom:.75rem;background:white;border-radius:14px;padding:.75rem 1rem">
+          <div><div class="ftoggle-lbl">✈️ Incluir viajes de este mes</div><div class="ftoggle-sub">Suma los gastos de tus viajes activos al resumen</div></div>
+          <label class="toggle-switch"><input type="checkbox" id="resumen-incl-viajes" onchange="toggleResumenViajes()"><span class="toggle-track"></span></label>
+        </div>
         <div class="sum-grid" id="sum-cards"></div>
         <div id="person-breakdown"></div>
         <div class="card">
@@ -543,7 +547,13 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
           <div class="card-title">📈 Últimos 6 meses</div>
           <div class="chart-container-sm"><canvas id="chart-bar"></canvas></div>
         </div>
-        <div class="card"><div class="card-title">Desglose detallado</div><div id="cat-breakdown"></div></div>
+        <div class="card">
+          <div class="card-title">
+            <span>Desglose detallado</span>
+            <span id="resumen-sel-total" style="font-size:.72rem;font-weight:800;color:#3b82f6"></span>
+          </div>
+          <div id="cat-breakdown"></div>
+        </div>
       </div>
 
       <div id="hogar-anual" style="display:none">
@@ -1785,29 +1795,89 @@ function checkBudgetWarn(){
 }
 
 // ══ RESUMEN ══
-function renderResumen(){
-  const entries=Object.values(hogarData);
-  const total=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
-  const pres=cfgData.presupuestos||{};
-  const sorted=[...ALL_CATS].map(c=>({...c,spent:entries.filter(g=>g.categoria===c.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).sort((a,b)=>b.spent-a.spent);
-  const top=sorted.find(c=>c.spent>0);
-  const conT=entries.filter(g=>g.foto_url).length;
-  document.getElementById('sum-cards').innerHTML=`
-    <div class="sum-card"><div class="sum-card-icon">💰</div><div class="sum-card-val">${fmtEur(total)}</div><div class="sum-card-lbl">${fmtMon(get_currentMonth())}</div></div>
-    <div class="sum-card"><div class="sum-card-icon">${top?.icon||'📊'}</div><div class="sum-card-val">${top?.spent>0?fmtEur(top.spent):'—'}</div><div class="sum-card-lbl">${top?.spent>0?top.label:'Sin gastos'}</div></div>
-    <div class="sum-card"><div class="sum-card-icon">🧾</div><div class="sum-card-val">${entries.length}</div><div class="sum-card-lbl">Operaciones</div></div>
-    <div class="sum-card"><div class="sum-card-icon">📸</div><div class="sum-card-val">${conT}</div><div class="sum-card-lbl">Con ticket</div></div>`;
+// ══ RESUMEN: combinar Hogar + Viajes (opcional) ══
+let resumenIncluirViajes=false;
+let resumenCatExcluded=new Set();
+let resumenCatDataCache=[];
 
-  // DONUT CHART
+function toggleResumenViajes(){
+  resumenIncluirViajes=document.getElementById('resumen-incl-viajes').checked;
+  resumenCatExcluded=new Set();
+  renderResumen();
+}
+
+// Alias: categorías de Viajes que representan lo mismo que una de Hogar → se suman en una sola fila
+const CAT_ALIAS_VIAJE={comidas:'restaurante',actividades:'ocio'};
+
+function getResumenEntries(){
+  const hogarEntries=Object.entries(hogarData).map(([id,g])=>({...g,_id:id,_tipo:'hogar'}));
+  if(!resumenIncluirViajes)return hogarEntries;
+  const mes=get_currentMonth();
+  const viajeEntries=[];
+  Object.entries(viajesData||{}).forEach(([vid,v])=>{
+    Object.entries(v.gastos||{}).forEach(([gid,g])=>{
+      if(!(g.fecha||'').startsWith(mes))return;
+      viajeEntries.push({...g,quien:g.quien_pago,categoria:CAT_ALIAS_VIAJE[g.categoria]||g.categoria,_id:gid,_tipo:'viaje',_viajeId:vid});
+    });
+  });
+  return hogarEntries.concat(viajeEntries);
+}
+
+function getCatForResumen(id){
+  return ALL_CATS.find(c=>c.id===id)||getCat(CAT_VIAJE,id);
+}
+
+function buildResumenCatData(entries){
+  const map={};
+  entries.forEach(g=>{
+    const id=g.categoria;
+    if(!map[id])map[id]={...getCatForResumen(id),spent:0};
+    map[id].spent+=parseFloat(g.importe||0);
+  });
+  return Object.values(map).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent);
+}
+
+function updateResumenDonut(){
+  const donutData=resumenCatDataCache.filter(c=>!resumenCatExcluded.has(c.id));
+  const selTotal=donutData.reduce((s,c)=>s+c.spent,0);
+  const selEl=document.getElementById('resumen-sel-total');
+  if(selEl)selEl.textContent=resumenCatDataCache.length?`Seleccionado: ${fmtEur(selTotal)}`:'';
   if(chartDonut){chartDonut.destroy();chartDonut=null;}
-  const catData=ALL_CATS.map(c=>({label:c.label,value:entries.filter(g=>g.categoria===c.id).reduce((s,g)=>s+parseFloat(g.importe||0),0),color:c.color})).filter(c=>c.value>0);
-  if(catData.length){
+  if(donutData.length){
     chartDonut=new Chart(document.getElementById('chart-donut').getContext('2d'),{
       type:'doughnut',
-      data:{labels:catData.map(c=>c.label),datasets:[{data:catData.map(c=>c.value),backgroundColor:catData.map(c=>c.color),borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
+      data:{labels:donutData.map(c=>c.label),datasets:[{data:donutData.map(c=>c.spent),backgroundColor:donutData.map(c=>c.color),borderWidth:2,borderColor:'#fff',hoverOffset:6}]},
       options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:11,weight:'bold'},padding:10,boxWidth:12}}}}
     });
   }
+}
+
+function toggleResumenCat(id){
+  if(resumenCatExcluded.has(id))resumenCatExcluded.delete(id);
+  else resumenCatExcluded.add(id);
+  document.getElementById(`rescat-check-${id}`)?.classList.toggle('sel',!resumenCatExcluded.has(id));
+  updateResumenDonut();
+}
+
+function renderResumen(){
+  const incEl=document.getElementById('resumen-incl-viajes');
+  if(incEl)incEl.checked=resumenIncluirViajes;
+  const entries=getResumenEntries();
+  const total=entries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+  const pres=cfgData.presupuestos||{};
+  const catData=buildResumenCatData(entries);
+  const top=catData[0];
+  const conT=entries.filter(g=>g.foto_url).length;
+  document.getElementById('sum-cards').innerHTML=`
+    <div class="sum-card"><div class="sum-card-icon">💰</div><div class="sum-card-val">${fmtEur(total)}</div><div class="sum-card-lbl">${fmtMon(get_currentMonth())}</div></div>
+    <div class="sum-card"><div class="sum-card-icon">${top?.icon||'📊'}</div><div class="sum-card-val">${top&&top.spent>0?fmtEur(top.spent):'—'}</div><div class="sum-card-lbl">${top&&top.spent>0?top.label:'Sin gastos'}</div></div>
+    <div class="sum-card"><div class="sum-card-icon">🧾</div><div class="sum-card-val">${entries.length}</div><div class="sum-card-lbl">Operaciones</div></div>
+    <div class="sum-card"><div class="sum-card-icon">📸</div><div class="sum-card-val">${conT}</div><div class="sum-card-lbl">Con ticket</div></div>`;
+
+  // DONUT CHART (respeta checkboxes de categoría marcados/desmarcados)
+  resumenCatDataCache=catData;
+  resumenCatExcluded=new Set([...resumenCatExcluded].filter(id=>catData.some(c=>c.id===id)));
+  updateResumenDonut();
 
   loadBarChart();
 
@@ -1815,7 +1885,7 @@ function renderResumen(){
   const personBreakdown=FAMILY.map(f=>{
     const fEntries=entries.filter(g=>g.quien===f.id);
     const fTotal=fEntries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
-    const byCat=ALL_CATS.map(c=>({...c,spent:fEntries.filter(g=>g.categoria===c.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent);
+    const byCat=buildResumenCatData(fEntries);
     return{...f,total:fTotal,byCat,count:fEntries.length};
   }).filter(f=>f.total>0).sort((a,b)=>b.total-a.total);
 
@@ -1851,22 +1921,30 @@ function renderResumen(){
 
   document.getElementById('person-breakdown').innerHTML=personHtml;
 
-  // CAT BREAKDOWN
-  const cats=ALL_CATS.map(c=>({...c,spent:entries.filter(g=>g.categoria===c.id).reduce((s,g)=>s+parseFloat(g.importe||0),0),budget:parseFloat(pres[c.id]||0)})).filter(c=>c.spent>0||c.budget>0).sort((a,b)=>b.spent-a.spent);
-  if(!cats.length){document.getElementById('cat-breakdown').innerHTML='<div class="empty" style="padding:1.5rem"><div class="ei">📊</div><div class="et">Añade gastos para ver el resumen</div></div>';return;}
+  // CAT BREAKDOWN — con checkbox para incluir/excluir del donut y del total seleccionado
+  const zeroSpendBudgeted=ALL_CATS.filter(c=>!catData.some(cd=>cd.id===c.id)&&parseFloat(pres[c.id]||0)>0).map(c=>({...c,spent:0}));
+  const cats=[...catData,...zeroSpendBudgeted].map(c=>({...c,budget:parseFloat(pres[c.id]||0)})).sort((a,b)=>b.spent-a.spent);
+  if(!cats.length){document.getElementById('cat-breakdown').innerHTML='<div class="empty" style="padding:1.5rem"><div class="ei">📊</div><div class="et">Añade gastos para ver el resumen</div></div>';const s=document.getElementById('resumen-sel-total');if(s)s.textContent='';return;}
   document.getElementById('cat-breakdown').innerHTML=cats.map(c=>{
     const pct=c.budget>0?Math.min(100,(c.spent/c.budget)*100):0;
     const cls=pct>=100?'over':pct>=80?'warn':'ok';
     const over=c.budget>0&&c.spent>c.budget;
-    return`<div class="cat-row" onclick="openCatDetalle('${c.id}')" style="cursor:pointer;transition:background .15s;border-radius:8px;padding:.65rem .5rem">
-      <div class="cat-rh">
-        <div class="cat-rl"><div class="cat-icon-sm" style="background:${c.color}20">${c.icon}</div>${c.label}${over?'<span style="font-size:.62rem;background:#fff1f2;color:#ef4444;padding:1px 7px;border-radius:20px;font-weight:800;margin-left:4px">⚠️</span>':''}</div>
-        <div style="display:flex;align-items:center;gap:6px">
-          <div style="font-size:.88rem;font-weight:900;color:${over?'#ef4444':'#0f172a'}">${fmtEur(c.spent)}</div>
-          <span style="font-size:.7rem;color:#94a3b8">›</span>
+    const checked=!resumenCatExcluded.has(c.id);
+    const rowOnclick=resumenIncluirViajes?'':` onclick="openCatDetalle('${c.id}')"`;
+    return`<div class="cat-row"${rowOnclick} style="transition:background .15s;border-radius:8px;padding:.65rem .5rem;display:flex;flex-direction:column;gap:2px;cursor:${resumenIncluirViajes?'default':'pointer'}">
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation()" onchange="toggleResumenCat('${c.id}',this.checked)" style="width:17px;height:17px;flex-shrink:0;cursor:pointer;accent-color:#3b82f6">
+        <div class="cat-rh" style="flex:1">
+          <div class="cat-rl"><div class="cat-icon-sm" style="background:${c.color}20">${c.icon}</div>${c.label}${over?'<span style="font-size:.62rem;background:#fff1f2;color:#ef4444;padding:1px 7px;border-radius:20px;font-weight:800;margin-left:4px">⚠️</span>':''}</div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="font-size:.88rem;font-weight:900;color:${over?'#ef4444':'#0f172a'}">${fmtEur(c.spent)}</div>
+            ${resumenIncluirViajes?'':'<span style="font-size:.7rem;color:#94a3b8">›</span>'}
+          </div>
         </div>
       </div>
-      ${c.budget>0?`<div class="bbar-wrap"><div class="bbar ${cls}" style="width:${pct}%"></div></div><div class="cat-sub">${fmtEur(c.spent)} de ${fmtEur(c.budget)} · ${Math.round(pct)}%</div>`:`<div class="cat-sub" style="font-style:italic">Sin presupuesto · Toca para ver detalle</div>`}
+      <div style="padding-left:25px">
+        ${c.budget>0?`<div class="bbar-wrap"><div class="bbar ${cls}" style="width:${pct}%"></div></div><div class="cat-sub">${fmtEur(c.spent)} de ${fmtEur(c.budget)} · ${Math.round(pct)}%</div>`:`<div class="cat-sub" style="font-style:italic">${resumenIncluirViajes?'Sin presupuesto':'Sin presupuesto · Toca para ver detalle'}</div>`}
+      </div>
     </div>`;
   }).join('');
 }
