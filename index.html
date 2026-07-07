@@ -1742,59 +1742,58 @@ function getFilteredSortedEntries(){
 }
 
 // ══ RECURRENTES — sin duplicados ══
-async function addRecurrentes(pendientes){
-  let added=0,skipped=0;
-  const currentDescs=Object.values(hogarData).map(g=>g.categoria+'_'+(g.descripcion||'').toLowerCase());
-  for(const g of pendientes){
-    const key=g.categoria+'_'+(g.descripcion||'').toLowerCase();
-    if(currentDescs.includes(key)){skipped++;continue;}
-    const data={...g,fecha:todayISO(),timestamp:Date.now()};
-    await dbPush(`gastos_hogar/${get_currentMonth()}`,data);
-    added++;
-  }
-  if(added>0&&skipped>0)toast(`✅ ${added} añadido${added!==1?'s':''} · ${skipped} ya existía${skipped!==1?'n':''}`);
-  else if(added>0)toast(`✅ ${added} gasto${added!==1?'s':''} añadido${added!==1?'s':''}`);
-  else toast(`ℹ️ Todos los recurrentes ya están este mes`);
-  document.getElementById('recurrentes-banner').style.display='none';
-}
+function normDesc(g){return g.categoria+'_'+(g.descripcion||'').toLowerCase().trim();}
+
 function checkRecurrentesBanner(){
   const banner=document.getElementById('recurrentes-banner');
   const [y,m]=get_currentMonth().split('-').map(Number);
   const prevMonth=monthKey(new Date(y,m-2,1));
+  window._prevMonthRec=prevMonth;
   dbGet('gastos_hogar/'+prevMonth).then(prevData=>{
     if(!prevData){banner.style.display='none';return;}
-    const recurrentes=Object.values(prevData).filter(function(g){return g.recurrente;});
+    const recurrentes=Object.entries(prevData).filter(([,g])=>g.recurrente);
     if(!recurrentes.length){banner.style.display='none';return;}
-    const currentDescs=Object.values(hogarData).map(function(g){return g.categoria+'_'+g.descripcion;});
-    const pendientes=recurrentes.filter(function(g){return !currentDescs.includes(g.categoria+'_'+g.descripcion);});
+    const currentDescs=Object.values(hogarData).map(normDesc);
+    const pendientes=recurrentes.filter(([,g])=>!currentDescs.includes(normDesc(g)));
     if(!pendientes.length){banner.style.display='none';return;}
-    const lista=pendientes.map(function(g){return getCatAll(g.categoria).icon+' '+esc(g.descripcion||getCatAll(g.categoria).label);}).join(', ');
     const n=pendientes.length;
     banner.style.display='block';
-    banner.innerHTML='<div class="rec-banner">'
-      +'<div class="rec-banner-left">'
-      +'<span class="rec-banner-icon">🔄</span>'
-      +'<div><div class="rec-banner-title">'+n+' gasto'+(n!==1?'s':'')+' recurrente'+(n!==1?'s':'')+' pendiente'+(n!==1?'s':'')+'</div>'
-      +'<div class="rec-banner-sub">'+lista+'</div></div>'
-      +'</div>'
-      +'<button class="rec-banner-btn" onclick="addRecurrentesPending()">Añadir</button>'
-      +'</div>';
-    window._pendientesRec=pendientes;
+    banner.innerHTML=`<div class="rec-banner-wrap">
+      <div class="rec-banner-left" style="margin-bottom:.4rem">
+        <span class="rec-banner-icon">🔄</span>
+        <div class="rec-banner-title">${n} gasto${n!==1?'s':''} recurrente${n!==1?'s':''} pendiente${n!==1?'s':''}</div>
+      </div>
+      ${pendientes.map(([gid,g])=>{
+        const cat=getCatAll(g.categoria);
+        return`<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem 0;border-top:1px solid rgba(0,0,0,.07)">
+          <div style="display:flex;align-items:center;gap:6px;font-size:.78rem;min-width:0">
+            <span style="flex-shrink:0">${cat.icon}</span>
+            <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(g.descripcion||cat.label)}</span>
+            <span style="color:#94a3b8;flex-shrink:0">· ${fmtEur(g.importe)}</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0">
+            <button class="rec-banner-btn" style="padding:5px 12px;font-size:.72rem" onclick="addRecurrentePending('${prevMonth}','${gid}')">Añadir</button>
+            <button class="rec-banner-btn" style="padding:5px 10px;font-size:.72rem;background:#f1f5f9;color:#64748b" onclick="dismissRecurrente('${prevMonth}','${gid}')" title="No sugerir más este gasto">✕</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
   });
 }
 
-async function addRecurrentesPending(){
-  const pendientes=window._pendientesRec||[];
-  await addRecurrentes(pendientes);
+async function addRecurrentePending(prevMonth,gid){
+  const g=await dbGet(`gastos_hogar/${prevMonth}/${gid}`);
+  if(!g)return;
+  const data={...g,fecha:todayISO(),timestamp:Date.now()};
+  await dbPush(`gastos_hogar/${get_currentMonth()}`,data);
+  toast('✅ Gasto añadido');
+  checkRecurrentesBanner();
 }
 
-async function addRecurrentes(pendientes){
-  for(const g of pendientes){
-    const data={...g,fecha:todayISO(),timestamp:Date.now()};
-    await dbPush(`gastos_hogar/${get_currentMonth()}`,data);
-  }
-  toast(`✅ ${pendientes.length} gasto${pendientes.length!==1?'s':''} añadido${pendientes.length!==1?'s':''}`);
-  document.getElementById('recurrentes-banner').style.display='none';
+async function dismissRecurrente(prevMonth,gid){
+  await dbUpd(`gastos_hogar/${prevMonth}/${gid}`,{recurrente:null});
+  toast('✅ No se volverá a sugerir este gasto');
+  checkRecurrentesBanner();
 }
 
 // ══ BUDGET WARNING ══
