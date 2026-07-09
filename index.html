@@ -2320,8 +2320,25 @@ function exportMes(){
   const totalBudget=Object.values(pres).reduce((s,v)=>s+parseFloat(v||0),0);
   const porPersona=FAMILY.map(f=>({...f,total:entries.filter(g=>g.quien===f.id).reduce((s,g)=>s+parseFloat(g.importe||0),0),count:entries.filter(g=>g.quien===f.id).length})).filter(f=>f.total>0).sort((a,b)=>b.total-a.total);
   const porCat=ALL_CATS.map(c=>({...c,spent:entries.filter(g=>g.categoria===c.id).reduce((s,g)=>s+parseFloat(g.importe||0),0)})).filter(c=>c.spent>0).sort((a,b)=>b.spent-a.spent);
+  const detalleGasto=(g,cat)=>{
+    if(cat.id==='supermercado'&&g.cadena){
+      return esc(g.cadena)+(g.descripcion?' — '+esc(g.descripcion):'');
+    }
+    if(cat.id==='gasolina'){
+      const partes=[];
+      if(g.vehiculo)partes.push(g.vehiculo==='tiguan'?'🚙 VW Tiguan':'🚗 VW Golf');
+      if(g.litros)partes.push(g.litros+' L');
+      if(g.precio_litro)partes.push(g.precio_litro+' €/L');
+      if(g.gasolinera)partes.push(esc(g.gasolinera));
+      return partes.length?partes.join(' · '):esc(g.descripcion||'—');
+    }
+    if(cat.id==='seguros'&&g.tipo_seguro){
+      return '🛡️ '+esc(g.tipo_seguro)+(g.descripcion?' — '+esc(g.descripcion):'');
+    }
+    return esc(g.descripcion||'—');
+  };
   const rowsHtml=(list)=>list.map(g=>{const cat=getCatAll(g.categoria);const quien=FAMILY.find(f=>f.id===g.quien)?.name||'?';
-    return '<tr><td>'+fmtDate(g.fecha)+'</td><td>'+cat.icon+' '+cat.label+'</td><td>'+esc(g.descripcion||'—')+(g.nota?'<br><small>'+esc(g.nota)+'</small>':'')+'</td><td>'+quien+'</td><td class="num">'+fmtEur(g.importe)+'</td></tr>';
+    return '<tr><td>'+fmtDate(g.fecha)+'</td><td>'+cat.icon+' '+cat.label+'</td><td>'+detalleGasto(g,cat)+(g.nota?'<br><small>'+esc(g.nota)+'</small>':'')+'</td><td>'+quien+'</td><td class="num">'+fmtEur(g.importe)+'</td></tr>';
   }).join('');
   const pct=totalBudget>0?Math.round((total/totalBudget)*100):0;
   const w=window.open('','_blank');
@@ -2353,7 +2370,13 @@ function exportMes(){
   +'<h2>👥 Por persona</h2>'
   +porPersona.map(f=>'<div class="cr"><span><b>'+f.name+'</b> <span style="color:#94a3b8;font-size:.78rem">'+f.count+' op.</span></span><b>'+fmtEur(f.total)+'</b></div>').join('')
   +'<h2>📊 Por categoría</h2>'
-  +porCat.map(c=>'<div class="cr"><span>'+c.icon+' '+c.label+'</span><b>'+fmtEur(c.spent)+'</b></div>').join('')
+  +porCat.map(c=>{
+    const budget=parseFloat(pres[c.id]||0);
+    const cPct=budget>0?Math.round((c.spent/budget)*100):0;
+    const barColor=budget>0&&c.spent>budget?'#ef4444':cPct>=80?'#f59e0b':'#22c55e';
+    return '<div class="cr"><span>'+c.icon+' '+c.label+'</span><b>'+fmtEur(c.spent)+'</b></div>'
+      +(budget>0?'<div class="pbar" style="height:7px;margin:.1rem 0 .55rem"><div class="pfill" style="width:'+Math.min(100,cPct)+'%;background:'+barColor+'"></div></div><div style="font-size:.68rem;color:#94a3b8;margin:-.3rem 0 .55rem">'+fmtEur(c.spent)+' de '+fmtEur(budget)+' · '+cPct+'%</div>':'');
+  }).join('')
   +(fijos.length?'<h2>💡 Gastos fijos</h2><table><thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Quién</th><th>Importe</th></tr></thead><tbody>'+rowsHtml(fijos)+'</tbody><tfoot><tr class="tr"><td colspan="4">TOTAL FIJOS</td><td class="num">'+fmtEur(totalFijos)+'</td></tr></tfoot></table>':'')
   +(generales.length?'<h2>🛒 Gastos del día a día</h2><table><thead><tr><th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Quién</th><th>Importe</th></tr></thead><tbody>'+rowsHtml(generales)+'</tbody><tfoot><tr class="tr"><td colspan="4">TOTAL DÍA A DÍA</td><td class="num">'+fmtEur(totalGenerales)+'</td></tr></tfoot></table>':'')
   +'<div style="text-align:center;margin-top:2rem;color:#94a3b8;font-size:.75rem">💰 Gastos Familia</div>'
