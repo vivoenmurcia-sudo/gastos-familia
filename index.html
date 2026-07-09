@@ -2229,7 +2229,7 @@ function openGHModal(editId){
   // Supermercado
   const superSecH=document.getElementById('gh-super-section');
   if(superSecH)superSecH.style.display=selCatH==='supermercado'?'':'none';
-  resetCadenaSuper('gh');
+  resetCadenaSuper('gh',!!editId);
   if(editId&&hogarData[editId]&&hogarData[editId].cadena)loadCadenaSuper('gh',hogarData[editId].cadena);
   // Seguros
   const seguroSecH=document.getElementById('gh-seguro-section');
@@ -2824,10 +2824,10 @@ function getCadenaData(prefix){
   return cadena;
 }
 
-function resetCadenaSuper(prefix){
-  selCadenaSuper[prefix]='Mercadona';
+function resetCadenaSuper(prefix,sinDefecto){
+  selCadenaSuper[prefix]=sinDefecto?null:'Mercadona';
   const btns=document.querySelectorAll(`#${prefix}-super-cadena .gas-veh`);
-  btns.forEach((b,i)=>b.classList.toggle('active',i===0));
+  btns.forEach((b,i)=>b.classList.toggle('active',!sinDefecto&&i===0));
   const otroInput=document.getElementById(`${prefix}-super-otro`);
   if(otroInput){otroInput.style.display='none';otroInput.value='';}
 }
@@ -3348,7 +3348,7 @@ function openGVModal(editId){
     // Supermercado section
     const superSecV=document.getElementById('gv-super-section');
     if(superSecV)superSecV.style.display=selCatV==='supermercado'?'':'none';
-    resetCadenaSuper('gv');
+    resetCadenaSuper('gv',true);
     if(editId&&g.cadena)loadCadenaSuper('gv',g.cadena);
     // Enlace section
     const enlaceSection=document.getElementById('gv-enlace-section');
