@@ -1031,6 +1031,15 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     </div>
     <div class="gas-stat-grid" id="km-stat-cards"></div>
     <div class="card" style="padding:.85rem;margin-bottom:.85rem">
+      <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">⛽ Consumo y coste por km</div>
+      <div style="display:flex;gap:6px;margin-bottom:.65rem;flex-wrap:wrap">
+        <input type="date" class="finput" id="km-rango-desde" style="flex:1;min-width:120px;font-size:.8rem;padding:.5rem .6rem">
+        <input type="date" class="finput" id="km-rango-hasta" style="flex:1;min-width:120px;font-size:.8rem;padding:.5rem .6rem">
+        <button class="export-btn" onclick="calcularConsumoKm()">Calcular</button>
+      </div>
+      <div id="km-consumo-result"></div>
+    </div>
+    <div class="card" style="padding:.85rem;margin-bottom:.85rem">
       <div class="card-title" style="font-size:.78rem;margin-bottom:.65rem">📋 Historial</div>
       <div id="km-historial"></div>
     </div>
@@ -2475,14 +2484,67 @@ async function saveKmCoche(fecha){
 async function openKmCoches(){
   openModal('modal-km-coches');
   document.getElementById('km-stat-cards').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:1rem;color:#94a3b8">⏳ Cargando...</div>';
+  document.getElementById('km-consumo-result').innerHTML='';
+  const dEl=document.getElementById('km-rango-desde');if(dEl)dEl.value='';
+  const hEl=document.getElementById('km-rango-hasta');if(hEl)hEl.value='';
   const tiguan=Object.values(await dbGet('config_gastos/km_coches/tiguan')||{}).sort((a,b)=>b.timestamp-a.timestamp);
   const golf=Object.values(await dbGet('config_gastos/km_coches/golf')||{}).sort((a,b)=>b.timestamp-a.timestamp);
   kmCache={tiguan,golf};
   renderKmStats();
 }
 
+async function calcularConsumoKm(){
+  const desde=document.getElementById('km-rango-desde').value;
+  const hasta=document.getElementById('km-rango-hasta').value;
+  const resEl=document.getElementById('km-consumo-result');
+  if(!desde||!hasta){resEl.innerHTML='<div class="empty" style="padding:.75rem"><div class="es">Elige fecha de inicio y de fin</div></div>';return;}
+  if(desde>hasta){resEl.innerHTML='<div class="empty" style="padding:.75rem"><div class="es">La fecha "desde" no puede ser posterior a "hasta"</div></div>';return;}
+  resEl.innerHTML='<div style="text-align:center;padding:1rem;color:#94a3b8">⏳ Calculando...</div>';
+
+  // Meses a consultar entre las dos fechas
+  const [y1,m1]=desde.split('-').map(Number);
+  const [y2,m2]=hasta.split('-').map(Number);
+  const months=[];
+  let d=new Date(y1,m1-1,1);
+  const end=new Date(y2,m2-1,1);
+  while(d<=end){months.push(monthKey(d));d=new Date(d.getFullYear(),d.getMonth()+1,1);}
+  const monthsData=await Promise.all(months.map(m=>dbGet(`gastos_hogar/${m}`)));
+  const gasolinaEntries=[];
+  monthsData.forEach(md=>{Object.values(md||{}).forEach(g=>{
+    if(g.categoria==='gasolina'&&g.fecha>=desde&&g.fecha<=hasta)gasolinaEntries.push(g);
+  });});
+
+  const vehs=kmFilterVeh==='todos'?['tiguan','golf']:[kmFilterVeh];
+  resEl.innerHTML=vehs.map(veh=>{
+    const registros=(kmCache[veh]||[]).filter(r=>r.fecha>=desde&&r.fecha<=hasta).sort((a,b)=>a.fecha>b.fecha?1:-1);
+    const kmRecorridos=registros.length>=2?registros[registros.length-1].km_actual-registros[0].km_actual:null;
+    const label=veh==='tiguan'?'🚙 VW Tiguan':'🚗 VW Golf';
+    if(kmRecorridos===null||kmRecorridos<=0){
+      return `<div class="card" style="padding:.75rem;margin-bottom:.6rem;background:#f8fafc">
+        <div style="font-weight:800;font-size:.85rem;margin-bottom:4px">${label}</div>
+        <div style="font-size:.75rem;color:#94a3b8">Necesitas al menos 2 registros de km dentro de ese rango para poder calcular el consumo.</div>
+      </div>`;
+    }
+    const gEntries=gasolinaEntries.filter(g=>g.vehiculo===veh);
+    const litros=gEntries.reduce((s,g)=>s+parseFloat(g.litros||0),0);
+    const gasto=gEntries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+    const eurKm=kmRecorridos>0?(gasto/kmRecorridos):0;
+    const l100=litros>0&&kmRecorridos>0?(litros/kmRecorridos*100):0;
+    return `<div class="card" style="padding:.75rem;margin-bottom:.6rem">
+      <div style="font-weight:800;font-size:.85rem;margin-bottom:8px">${label}</div>
+      <div class="gas-stat-grid" style="gap:8px">
+        <div class="gas-stat-card"><div class="val">${kmRecorridos.toLocaleString()}</div><div class="lbl">Km recorridos</div></div>
+        <div class="gas-stat-card"><div class="val">${fmtEur(gasto)}</div><div class="lbl">Gasto gasolina</div></div>
+        <div class="gas-stat-card"><div class="val">${eurKm.toFixed(3)}€</div><div class="lbl">€ / km</div></div>
+        <div class="gas-stat-card"><div class="val">${l100>0?l100.toFixed(1)+'L':'—'}</div><div class="lbl">L / 100km</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 function setKmFilter(veh,btn){
   kmFilterVeh=veh;
+  document.getElementById('km-consumo-result').innerHTML='';
   document.querySelectorAll('#modal-km-coches .gas-filter-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   renderKmStats();
