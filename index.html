@@ -1955,6 +1955,18 @@ function renderResumen(){
   const zeroSpendBudgeted=ALL_CATS.filter(c=>!catData.some(cd=>cd.id===c.id)&&parseFloat(pres[c.id]||0)>0).map(c=>({...c,spent:0}));
   const cats=[...catData,...zeroSpendBudgeted].map(c=>({...c,budget:parseFloat(pres[c.id]||0)})).sort((a,b)=>b.spent-a.spent);
   if(!cats.length){document.getElementById('cat-breakdown').innerHTML='<div class="empty" style="padding:1.5rem"><div class="ei">📊</div><div class="et">Añade gastos para ver el resumen</div></div>';const s=document.getElementById('resumen-sel-total');if(s)s.textContent='';return;}
+  // Km recorridos este mes (a partir de los km guardados en gastos de gasolina/coche)
+  const kmPorVeh={};
+  entries.filter(g=>g.km_actual&&(g.categoria==='gasolina'||g.categoria==='coche')).forEach(g=>{
+    const v=g.km_vehiculo||g.vehiculo||'otro';
+    (kmPorVeh[v]=kmPorVeh[v]||[]).push(g);
+  });
+  let kmMes=0;
+  Object.values(kmPorVeh).forEach(list=>{
+    list.sort((a,b)=>(a.fecha||'')>(b.fecha||'')?1:-1);
+    if(list.length>=2)kmMes+=(list[list.length-1].km_actual-list[0].km_actual);
+  });
+  const kmTargetCat=cats.some(c=>c.id==='gasolina')?'gasolina':(cats.some(c=>c.id==='coche')?'coche':null);
   document.getElementById('cat-breakdown').innerHTML=cats.map(c=>{
     const pct=c.budget>0?Math.min(100,(c.spent/c.budget)*100):0;
     const cls=pct>=100?'over':pct>=80?'warn':'ok';
@@ -1974,6 +1986,7 @@ function renderResumen(){
       </div>
       <div style="padding-left:25px">
         ${c.budget>0?`<div class="bbar-wrap"><div class="bbar ${cls}" style="width:${pct}%"></div></div><div class="cat-sub">${fmtEur(c.spent)} de ${fmtEur(c.budget)} · ${Math.round(pct)}%</div>`:`<div class="cat-sub" style="font-style:italic">${resumenIncluirViajes?'Sin presupuesto':'Sin presupuesto · Toca para ver detalle'}</div>`}
+        ${(c.id===kmTargetCat&&kmMes>0)?`<div class="cat-sub" style="color:#3b82f6;font-weight:700;font-style:normal">🚗 +${kmMes.toLocaleString()} km este mes</div>`:''}
       </div>
     </div>`;
   }).join('');
@@ -2246,13 +2259,17 @@ function openGHModal(editId){
   resetTipoSeguro('gh');
   if(editId&&hogarData[editId]&&hogarData[editId].tipo_seguro)loadTipoSeguro('gh',hogarData[editId].tipo_seguro);
   else if(legacyTipoSeguro)loadTipoSeguro('gh',legacyTipoSeguro);
-  // Km coche
-  const kmSecH=document.getElementById('gh-km-section');
-  if(kmSecH)kmSecH.style.display=selCatH==='coche'?'':'none';
-  const kmEl=document.getElementById('gh-km-actual');if(kmEl)kmEl.value='';
-  const kmDiff=document.getElementById('gh-km-diff');if(kmDiff)kmDiff.style.display='none';
-  selKmVeh='tiguan';
-  document.querySelectorAll('#gh-km-veh .gas-veh').forEach((b,i)=>b.classList.toggle('active',i===0));
+  // Km coche (dentro de la sección de gasolina) — usa el mismo vehículo que el repostaje
+  const kmEl=document.getElementById('gh-km-actual');
+  const kmDiff=document.getElementById('gh-km-diff');
+  if(kmDiff)kmDiff.style.display='none';
+  if(editId&&hogarData[editId]&&hogarData[editId].km_actual){
+    if(kmEl)kmEl.value=hogarData[editId].km_actual;
+    selKmVeh=hogarData[editId].km_vehiculo||hogarData[editId].vehiculo||'tiguan';
+  }else{
+    if(kmEl)kmEl.value='';
+    selKmVeh=(editId&&hogarData[editId]&&hogarData[editId].vehiculo)||'tiguan';
+  }
   document.querySelectorAll('#gh-cat .cpick, #gh-cat-fijos .cpick').forEach(b=>b.classList.remove('sel','selv'));
   document.getElementById(`gh-cat-fijos-${selCatH}`)?.classList.add('sel');
   document.getElementById(`gh-cat-${selCatH}`)?.classList.add('sel');
@@ -2282,27 +2299,30 @@ async function saveGastoHogar(){
     }
     const enlace=document.getElementById('gh-enlace')?.value.trim()||null;
     const ubicacion=document.getElementById('gh-ubicacion')?.value.trim()||null;
-    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,enlace:enlace||null,ubicacion:ubicacion||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatH==='gasolina'?getGasData('gh'):{}),...(selCatH==='supermercado'?{cadena:getCadenaData('gh')}:{}),...(selCatH==='seguros'?{tipo_seguro:getTipoSeguroData('gh')}:{}),timestamp:Date.now()};
+    const kmValRaw=(selCatH==='coche'||selCatH==='gasolina')?parseFloat(document.getElementById('gh-km-actual')?.value||''):NaN;
+    const kmVal=(!isNaN(kmValRaw)&&kmValRaw>0)?kmValRaw:null;
+    const data={importe,categoria:selCatH,descripcion:document.getElementById('gh-desc').value.trim(),nota:document.getElementById('gh-nota').value.trim()||null,enlace:enlace||null,ubicacion:ubicacion||null,fecha,quien:document.getElementById('gh-quien').value,recurrente:document.getElementById('gh-rec').checked||null,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatH==='gasolina'?getGasData('gh'):{}),...(selCatH==='supermercado'?{cadena:getCadenaData('gh')}:{}),...(selCatH==='seguros'?{tipo_seguro:getTipoSeguroData('gh')}:{}),...(kmVal?{km_actual:kmVal,km_vehiculo:selKmVeh}:{}),timestamp:Date.now()};
+    let finalGastoId=editGHId;
     if(editGHId){
       // Si la fecha cambia de mes, mover a nuevo mes
       if(mesGasto!==mesActual){
         await dbDel(`gastos_hogar/${mesActual}/${editGHId}`);
-        await dbPush(`gastos_hogar/${mesGasto}`,data);
+        finalGastoId=await dbPush(`gastos_hogar/${mesGasto}`,data);
         toast('✅ Gasto movido a '+fmtMon(mesGasto));
       }else{
         await dbUpd(`gastos_hogar/${mesActual}/${editGHId}`,data);
         toast('✅ Gasto actualizado');
       }
     }else{
-      await dbPush(`gastos_hogar/${mesGasto}`,data);
+      finalGastoId=await dbPush(`gastos_hogar/${mesGasto}`,data);
       if(mesGasto!==mesActual){
         toast('✅ Gasto añadido en '+fmtMon(mesGasto));
       }else{
         toast('✅ Gasto añadido');
       }
     }
-    // Guardar km si categoría es Coche o Gasolina
-    if(selCatH==='coche'||selCatH==='gasolina')await saveKmCoche(fecha).catch(()=>{});
+    // Guardar km si categoría es Coche o Gasolina (vinculado al gasto, sin duplicar al editar)
+    if(kmVal)await saveKmCoche(fecha,finalGastoId).catch(()=>{});
     closeModal('modal-gh');
   }catch(e){console.error(e);toast('❌ Error al guardar');}
   finally{setUploading('gh',false);}
@@ -2464,21 +2484,30 @@ async function calcKmDiff(){
   }
 }
 
-async function saveKmCoche(fecha){
+async function saveKmCoche(fecha,gastoId){
   const kmEl=document.getElementById('gh-km-actual');
   const km=parseFloat(kmEl?.value||0);
   if(!km||km<=0)return;
-  const data=await dbGet(`config_gastos/km_coches/${selKmVeh}`)||{};
-  const registros=Object.values(data).sort((a,b)=>b.timestamp-a.timestamp);
-  const kmAnterior=registros.length>0?registros[0].km_actual:null;
+  const path=`config_gastos/km_coches/${selKmVeh}`;
+  const data=await dbGet(path)||{};
+  const entries=Object.entries(data);
+  // Si este gasto ya tenía un registro de km vinculado (p.ej. al editarlo), lo actualizamos en vez de duplicarlo
+  const existingEntry=gastoId?entries.find(([,r])=>r.gasto_id===gastoId):null;
+  const otrosRegistros=entries.filter(([id])=>!existingEntry||id!==existingEntry[0]).map(([,r])=>r).sort((a,b)=>b.timestamp-a.timestamp);
+  const kmAnterior=otrosRegistros.length>0?otrosRegistros[0].km_actual:null;
   const registro={
     vehiculo:selKmVeh,
     km_actual:km,
     km_recorridos:kmAnterior?km-kmAnterior:null,
     fecha:fecha||todayISO(),
-    timestamp:Date.now()
+    gasto_id:gastoId||null,
+    timestamp:existingEntry?existingEntry[1].timestamp:Date.now()
   };
-  await dbPush(`config_gastos/km_coches/${selKmVeh}`,registro);
+  if(existingEntry){
+    await dbUpd(`${path}/${existingEntry[0]}`,registro);
+  }else{
+    await dbPush(path,registro);
+  }
 }
 
 async function openKmCoches(){
