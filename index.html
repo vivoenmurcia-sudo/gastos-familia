@@ -2516,8 +2516,8 @@ async function openKmCoches(){
   document.getElementById('km-consumo-result').innerHTML='';
   const dEl=document.getElementById('km-rango-desde');if(dEl)dEl.value='';
   const hEl=document.getElementById('km-rango-hasta');if(hEl)hEl.value='';
-  const tiguan=Object.values(await dbGet('config_gastos/km_coches/tiguan')||{}).sort((a,b)=>b.timestamp-a.timestamp);
-  const golf=Object.values(await dbGet('config_gastos/km_coches/golf')||{}).sort((a,b)=>b.timestamp-a.timestamp);
+  const tiguan=Object.entries(await dbGet('config_gastos/km_coches/tiguan')||{}).map(([id,r])=>({...r,_id:id})).sort((a,b)=>b.timestamp-a.timestamp);
+  const golf=Object.entries(await dbGet('config_gastos/km_coches/golf')||{}).map(([id,r])=>({...r,_id:id})).sort((a,b)=>b.timestamp-a.timestamp);
   kmCache={tiguan,golf};
   renderKmStats();
 }
@@ -2620,8 +2620,19 @@ function renderKmStats(){
         <div style="font-size:.7rem;color:#94a3b8">${r.km_actual.toLocaleString()} km odómetro${r.km_recorridos?` · +${r.km_recorridos.toLocaleString()} km recorridos`:''}</div>
       </div>
       <div style="font-size:.9rem;font-weight:900;color:#6366f1">${r.km_actual.toLocaleString()} km</div>
+      <button onclick="deleteKmRegistro('${r._veh}','${r._id}')" style="background:#fef2f2;color:#ef4444;border:none;border-radius:8px;width:30px;height:30px;font-size:.85rem;cursor:pointer;flex-shrink:0;margin-left:6px">🗑️</button>
     </div>`;
   }).join('');
+}
+
+async function deleteKmRegistro(veh,id){
+  if(!confirm('¿Eliminar este registro de kilómetros del historial? Esto no borra el gasto, solo el registro del odómetro.'))return;
+  await dbDel(`config_gastos/km_coches/${veh}/${id}`);
+  toast('🗑️ Registro eliminado');
+  const tiguan=Object.entries(await dbGet('config_gastos/km_coches/tiguan')||{}).map(([id,r])=>({...r,_id:id})).sort((a,b)=>b.timestamp-a.timestamp);
+  const golf=Object.entries(await dbGet('config_gastos/km_coches/golf')||{}).map(([id,r])=>({...r,_id:id})).sort((a,b)=>b.timestamp-a.timestamp);
+  kmCache={tiguan,golf};
+  renderKmStats();
 }
 
 const VEHICULOS=[{id:'tiguan',label:'VW Tiguan',icon:'🚙'},{id:'golf',label:'VW Golf',icon:'🚗'}];
