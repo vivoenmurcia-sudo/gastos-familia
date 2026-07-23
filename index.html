@@ -2543,8 +2543,9 @@ async function calcularConsumoKm(){
     if(g.categoria==='gasolina'&&g.fecha>=desde&&g.fecha<=hasta)gasolinaEntries.push(g);
   });});
 
+  const nMeses=months.length;
   const vehs=kmFilterVeh==='todos'?['tiguan','golf']:[kmFilterVeh];
-  resEl.innerHTML=vehs.map(veh=>{
+  resEl.innerHTML=(nMeses>1?`<div style="font-size:.7rem;color:#94a3b8;margin-bottom:.5rem">Rango de ${nMeses} meses — las medias se calculan dividiendo entre estos ${nMeses} meses</div>`:'')+vehs.map(veh=>{
     const registros=(kmCache[veh]||[]).filter(r=>r.fecha>=desde&&r.fecha<=hasta).sort((a,b)=>a.fecha>b.fecha?1:-1);
     const kmRecorridos=registros.length>=2?registros[registros.length-1].km_actual-registros[0].km_actual:null;
     const label=veh==='tiguan'?'🚙 VW Tiguan':'🚗 VW Golf';
@@ -2559,6 +2560,8 @@ async function calcularConsumoKm(){
     const gasto=gEntries.reduce((s,g)=>s+parseFloat(g.importe||0),0);
     const eurKm=kmRecorridos>0?(gasto/kmRecorridos):0;
     const l100=litros>0&&kmRecorridos>0?(litros/kmRecorridos*100):0;
+    const kmMedioMes=kmRecorridos/nMeses;
+    const gastoMedioMes=gasto/nMeses;
     return `<div class="card" style="padding:.75rem;margin-bottom:.6rem">
       <div style="font-weight:800;font-size:.85rem;margin-bottom:8px">${label}</div>
       <div class="gas-stat-grid" style="gap:8px">
@@ -2566,6 +2569,8 @@ async function calcularConsumoKm(){
         <div class="gas-stat-card"><div class="val">${fmtEur(gasto)}</div><div class="lbl">Gasto gasolina</div></div>
         <div class="gas-stat-card"><div class="val">${eurKm.toFixed(3)}€</div><div class="lbl">€ / km</div></div>
         <div class="gas-stat-card"><div class="val">${l100>0?l100.toFixed(1)+'L':'—'}</div><div class="lbl">L / 100km</div></div>
+        <div class="gas-stat-card"><div class="val">${Math.round(kmMedioMes).toLocaleString()}</div><div class="lbl">Km medios/mes</div></div>
+        <div class="gas-stat-card"><div class="val">${fmtEur(gastoMedioMes)}</div><div class="lbl">Gasto medio/mes</div></div>
       </div>
     </div>`;
   }).join('');
@@ -3169,12 +3174,31 @@ function exportCategoriaPDF(){
   const budget=parseFloat((cfgData.presupuestos||{})[currentCatId]||0);
   const pct=budget>0?Math.round((total/budget)*100):0;
   const barColor=budget>0&&total>budget?'#ef4444':pct>=80?'#f59e0b':'#22c55e';
+  // Estadísticas de consumo (solo Gasolina): litros, km recorridos, €/km, L/100km de este mes
+  let consumoHtml='';
+  if(currentCatId==='gasolina'){
+    const litros=entries.reduce((s,g)=>s+parseFloat(g.litros||0),0);
+    const kmPorVeh={};
+    entries.filter(g=>g.km_actual).forEach(g=>{const v=g.km_vehiculo||g.vehiculo||'otro';(kmPorVeh[v]=kmPorVeh[v]||[]).push(g);});
+    let kmMes=0;
+    Object.values(kmPorVeh).forEach(list=>{list.sort((a,b)=>(a.fecha||'')>(b.fecha||'')?1:-1);if(list.length>=2)kmMes+=(list[list.length-1].km_actual-list[0].km_actual);});
+    const eurKm=kmMes>0?(total/kmMes):0;
+    const l100=litros>0&&kmMes>0?(litros/kmMes*100):0;
+    consumoHtml='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem">'
+      +'<div style="background:#f8fafc;border-radius:10px;padding:.6rem;text-align:center"><div style="font-size:1rem;font-weight:900">'+litros.toFixed(1)+' L</div><div style="font-size:.65rem;color:#64748b;text-transform:uppercase">Litros</div></div>'
+      +'<div style="background:#f8fafc;border-radius:10px;padding:.6rem;text-align:center"><div style="font-size:1rem;font-weight:900">'+(kmMes>0?kmMes.toLocaleString():'—')+'</div><div style="font-size:.65rem;color:#64748b;text-transform:uppercase">Km recorridos</div></div>'
+      +'<div style="background:#f8fafc;border-radius:10px;padding:.6rem;text-align:center"><div style="font-size:1rem;font-weight:900">'+(eurKm>0?eurKm.toFixed(3)+'€':'—')+'</div><div style="font-size:.65rem;color:#64748b;text-transform:uppercase">€ / km</div></div>'
+      +'<div style="background:#f8fafc;border-radius:10px;padding:.6rem;text-align:center"><div style="font-size:1rem;font-weight:900">'+(l100>0?l100.toFixed(1)+'L':'—')+'</div><div style="font-size:.65rem;color:#64748b;text-transform:uppercase">L / 100km</div></div>'
+      +'</div>'
+      +(kmMes===0?'<div style="font-size:.72rem;color:#94a3b8;margin:-1rem 0 1.25rem">Necesitas al menos 2 lecturas de km este mes para calcular €/km y consumo.</div>':'');
+  }
   const w=window.open('','_blank');
   w.document.write('<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>'+cat.icon+' '+cat.label+'</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;color:#0f172a;padding:2rem;max-width:800px;margin:0 auto;font-size:14px}h1{font-size:1.6rem;font-weight:900;margin-bottom:.25rem}.sub{color:#64748b;font-size:.85rem;margin-bottom:1.5rem}.pb{padding:10px 20px;background:'+cat.color+';color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;margin-bottom:1.5rem}.pbar{background:#f1f5f9;border-radius:99px;height:10px;overflow:hidden;margin:.5rem 0}.pfill{height:100%;border-radius:99px}table{width:100%;border-collapse:collapse}th{background:#f1f5f9;padding:.55rem .75rem;text-align:left;font-size:.7rem;text-transform:uppercase;color:#64748b}td{padding:.5rem .75rem;border-bottom:1px solid #f1f5f9;font-size:.83rem}.num{text-align:right;font-weight:700}.tr{background:#f8fafc;font-weight:900}.tr td{padding:.65rem .75rem}@media print{.pb{display:none}}</style></head><body>'
   +'<button class="pb" onclick="window.print()">🖨️ Imprimir / Guardar PDF</button>'
   +'<h1>'+cat.icon+' '+cat.label+'</h1>'
   +'<div class="sub">'+fmtMon(get_currentMonth())+' · '+entries.length+' operaciones · Total: '+fmtEur(total)+'</div>'
   +(budget>0?'<div class="pbar"><div class="pfill" style="width:'+Math.min(100,pct)+'%;background:'+barColor+'"></div></div><div style="display:flex;justify-content:space-between;font-size:.82rem;color:#64748b;margin-bottom:1.25rem"><span>Gastado: <b>'+fmtEur(total)+'</b></span><span>Presupuesto: <b>'+fmtEur(budget)+'</b></span><span><b>'+pct+'%</b></span></div>':'')
+  +consumoHtml
   +'<table><thead><tr><th>Fecha</th><th>Descripción</th><th>Quién</th><th>Importe</th></tr></thead><tbody>'
   +entries.map(g=>'<tr><td>'+fmtDate(g.fecha)+'</td><td>'+detalleGasto(g,cat)+(g.nota?'<br><small>'+esc(g.nota)+'</small>':'')+'</td><td>'+(FAMILY.find(f=>f.id===g.quien)?.name||'?')+'</td><td class="num">'+fmtEur(g.importe)+'</td></tr>').join('')
   +'</tbody><tfoot><tr class="tr"><td colspan="3">TOTAL '+cat.label.toUpperCase()+'</td><td class="num">'+fmtEur(total)+'</td></tr></tfoot></table>'
