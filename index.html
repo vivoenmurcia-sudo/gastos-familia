@@ -1826,7 +1826,7 @@ function checkBudgetWarn(){
 }
 
 // ══ RESUMEN: combinar Hogar + Viajes (opcional) ══
-let resumenIncluirViajes=false;
+let resumenIncluirViajes=true;
 let resumenCatExcluded=new Set();
 let resumenCatDataCache=[];
 
@@ -1966,6 +1966,8 @@ function renderResumen(){
     list.sort((a,b)=>(a.fecha||'')>(b.fecha||'')?1:-1);
     if(list.length>=2)kmMes+=(list[list.length-1].km_actual-list[0].km_actual);
   });
+  const litrosMes=entries.filter(g=>g.categoria==='gasolina').reduce((s,g)=>s+parseFloat(g.litros||0),0);
+  const l100Mes=litrosMes>0&&kmMes>0?(litrosMes/kmMes*100):0;
   const kmTargetCat=cats.some(c=>c.id==='gasolina')?'gasolina':(cats.some(c=>c.id==='coche')?'coche':null);
   document.getElementById('cat-breakdown').innerHTML=cats.map(c=>{
     const pct=c.budget>0?Math.min(100,(c.spent/c.budget)*100):0;
@@ -1986,7 +1988,7 @@ function renderResumen(){
       </div>
       <div style="padding-left:25px">
         ${c.budget>0?`<div class="bbar-wrap"><div class="bbar ${cls}" style="width:${pct}%"></div></div><div class="cat-sub">${fmtEur(c.spent)} de ${fmtEur(c.budget)} · ${Math.round(pct)}%</div>`:`<div class="cat-sub" style="font-style:italic">${resumenIncluirViajes?'Sin presupuesto':'Sin presupuesto · Toca para ver detalle'}</div>`}
-        ${(c.id===kmTargetCat&&kmMes>0)?`<div class="cat-sub" style="color:#3b82f6;font-weight:700;font-style:normal">🚗 +${kmMes.toLocaleString()} km este mes</div>`:''}
+        ${(c.id===kmTargetCat&&kmMes>0)?`<div class="cat-sub" style="color:#3b82f6;font-weight:700;font-style:normal">🚗 +${kmMes.toLocaleString()} km este mes${l100Mes>0?` · ⛽ ${l100Mes.toFixed(1)}L/100km`:''}</div>`:''}
       </div>
     </div>`;
   }).join('');
