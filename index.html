@@ -774,6 +774,12 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
     <div class="fg"><label class="flabel">Presupuesto (€)</label><input type="number" class="finput vf" id="v-presupuesto" placeholder="Sin límite" min="0" step="10"></div>
     <div class="fg"><label class="flabel">📋 Enlace al plan del viaje <span style="color:#cbd5e1;font-weight:400">(opcional)</span></label>
       <input type="url" class="finput vf" id="v-enlace-plan" placeholder="https://docs.google.com/..."></div>
+    <div class="fg"><label class="flabel">🚗 Km inicial del viaje <span style="color:#cbd5e1;font-weight:400">(opcional — para saber cuánto recorréis)</span></label>
+      <div class="gas-veh-row" id="v-km-veh" style="margin-bottom:6px">
+        <div class="gas-veh active" onclick="selectViajeKmVeh('tiguan',this)">🚙 VW Tiguan</div>
+        <div class="gas-veh" onclick="selectViajeKmVeh('golf',this)">🚗 VW Golf</div>
+      </div>
+      <input type="number" class="finput vf" id="v-km-inicial" placeholder="Km del odómetro al salir de casa" min="0" step="1"></div>
     <div class="fg"><label class="flabel">Participantes</label><div class="pax-grid" id="v-pax"></div></div>
     <div class="mfooter">
       <button class="btn btn-cancel" onclick="closeModal('modal-viaje')">Cancelar</button>
@@ -814,6 +820,21 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectCadena('gv','otro',this)">✏️ Otra</div>
       </div>
       <input type="text" class="finput" id="gv-super-otro" placeholder="Nombre del supermercado..." style="display:none">
+    </div>
+    <!-- TRANSPORTE — selector de tipo (incluye Peaje) -->
+    <div class="fg" id="gv-transporte-section" style="display:none">
+      <label class="flabel">🚦 Tipo de transporte</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px" id="gv-transporte-tipo">
+        <div class="gas-veh active" style="flex:none;padding:8px 14px" onclick="selectTipoTransporte('gv','Peaje',this)">🛣️ Peaje</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoTransporte('gv','Parking',this)">🅿️ Parking</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoTransporte('gv','Taxi/Uber',this)">🚕 Taxi/Uber</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoTransporte('gv','Tren',this)">🚆 Tren</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoTransporte('gv','Avión',this)">✈️ Avión</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoTransporte('gv','Autobús',this)">🚌 Autobús</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoTransporte('gv','Alquiler coche',this)">🚗 Alquiler coche</div>
+        <div class="gas-veh" style="flex:none;padding:8px 14px" onclick="selectTipoTransporte('gv','otro',this)">✏️ Otro</div>
+      </div>
+      <input type="text" class="finput" id="gv-transporte-otro" placeholder="Especifica el tipo de transporte..." style="display:none">
     </div>
     <div class="fg" id="gv-gasolina-section" style="display:none">
       <label class="flabel">⛽ Datos del repostaje</label>
@@ -1607,25 +1628,54 @@ function renderHGastos(){
   });
 
   let viajesHtml='';
-  viajesActivos.forEach(([vid,v])=>{
-    const gastos=Object.values(v.gastos||{});
-    const total=gastos.reduce((s,g)=>s+parseFloat(g.importe||0),0);
-    if(!total)return;
-    const theme=destTheme(v.nombre,v.destino);
-    const pax=(v.participantes||[]).map(pid=>FAMILY.find(f=>f.id===pid)?.name||pid).join(', ');
-    viajesHtml+=`<div class="gasto-item viaje-resumen-item" onclick="switchMain('viajes',document.getElementById('btn-tab-viajes'));setTimeout(()=>openVDetail('${vid}'),100)" style="border-left:4px solid ${theme.color};cursor:pointer">
-      <div class="gcat-icon" style="background:${theme.color}20;font-size:1.4rem">✈️</div>
-      <div class="gasto-body">
-        <div class="gasto-desc">${theme.flag} ${esc(v.nombre||'Viaje')}</div>
-        <div class="gasto-nota">📍 ${esc(v.destino||'')} · ${gastos.length} gasto${gastos.length!==1?'s':''}</div>
-        <div class="gasto-meta">${pax}</div>
-      </div>
-      <div class="gasto-right">
-        <div class="gasto-importe" style="color:${theme.color}">${fmtEur(total)}</div>
-        <div style="font-size:.62rem;color:#94a3b8;font-weight:700">Ver viaje →</div>
-      </div>
-    </div>`;
-  });
+  if(resumenIncluirViajes){
+    // Detallado: cada gasto del viaje como una línea individual, marcado con ✈️ (solo consulta — para editar, ve al viaje)
+    const viajeItems=[];
+    viajesActivos.forEach(([vid,v])=>{
+      Object.entries(v.gastos||{}).forEach(([gid,g])=>{
+        if(!(g.fecha||'').startsWith(mes))return;
+        viajeItems.push({vid,v,gid,g});
+      });
+    });
+    viajeItems.sort((a,b)=>(a.g.fecha||'')<(b.g.fecha||'')?1:-1);
+    viajesHtml=viajeItems.map(({vid,v,gid,g})=>{
+      const cat=getCat(CAT_VIAJE,g.categoria||'otros');
+      const theme=destTheme(v.nombre,v.destino);
+      const quien=FAMILY.find(f=>f.id===g.quien_pago)?.name||g.quien_pago||'?';
+      return`<div class="gasto-item" onclick="openDetalle('viaje','${gid}','${vid}')" style="border-left:4px solid ${theme.color}">
+        <div class="gcat-icon" style="background:${theme.color}20">${cat.icon}</div>
+        <div class="gasto-body">
+          <div class="gasto-desc">${g.cadena&&!g.descripcion?`<span style="font-weight:900">${esc(g.cadena)}</span>`:esc(g.descripcion||cat.label)}</div>
+          <div class="gasto-nota">✈️ ${esc(v.nombre||'Viaje')}</div>
+          <div class="gasto-meta">${cat.label}<span style="color:#e2e8f0">·</span>${esc(quien)}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}</div>
+        </div>
+        <div class="gasto-right">
+          <div class="gasto-importe" style="color:${theme.color}">${fmtEur(g.importe)}</div>
+          <div style="font-size:.62rem;color:#94a3b8;font-weight:700">Ver viaje →</div>
+        </div>
+      </div>`;
+    }).join('');
+  } else {
+    viajesActivos.forEach(([vid,v])=>{
+      const gastos=Object.values(v.gastos||{});
+      const total=gastos.reduce((s,g)=>s+parseFloat(g.importe||0),0);
+      if(!total)return;
+      const theme=destTheme(v.nombre,v.destino);
+      const pax=(v.participantes||[]).map(pid=>FAMILY.find(f=>f.id===pid)?.name||pid).join(', ');
+      viajesHtml+=`<div class="gasto-item viaje-resumen-item" onclick="switchMain('viajes',document.getElementById('btn-tab-viajes'));setTimeout(()=>openVDetail('${vid}'),100)" style="border-left:4px solid ${theme.color};cursor:pointer">
+        <div class="gcat-icon" style="background:${theme.color}20;font-size:1.4rem">✈️</div>
+        <div class="gasto-body">
+          <div class="gasto-desc">${theme.flag} ${esc(v.nombre||'Viaje')}</div>
+          <div class="gasto-nota">📍 ${esc(v.destino||'')} · ${gastos.length} gasto${gastos.length!==1?'s':''}</div>
+          <div class="gasto-meta">${pax}</div>
+        </div>
+        <div class="gasto-right">
+          <div class="gasto-importe" style="color:${theme.color}">${fmtEur(total)}</div>
+          <div style="font-size:.62rem;color:#94a3b8;font-weight:700">Ver viaje →</div>
+        </div>
+      </div>`;
+    });
+  }
 
   if(!entries.length&&!viajesHtml){
     const search=document.getElementById('gastos-search')?.value||'';
@@ -1704,10 +1754,19 @@ function renderHGastos(){
   const viajesSection=viajesHtml?`
     <div class="gastos-group-hdr" style="border-left:3px solid #f97316;margin-bottom:6px">
       <span>✈️ Viajes este mes</span>
+      <span style="display:flex;align-items:center;gap:6px;font-size:.68rem;font-weight:700;color:#94a3b8">
+        Detallado
+        <label class="toggle-switch" style="transform:scale(.8)"><input type="checkbox" ${resumenIncluirViajes?'checked':''} onchange="toggleGastosListViajes(this.checked)"><span class="toggle-track"></span></label>
+      </span>
     </div>
     <div class="gasto-list">${viajesHtml}</div>`:'' ;
 
   el.innerHTML=`${viajesSection}${generalSec}${fijosSec}`;
+}
+
+function toggleGastosListViajes(checked){
+  resumenIncluirViajes=checked;
+  renderHGastos();
 }
 
 // ══ SEARCH / FILTER / SORT ══
@@ -2038,7 +2097,7 @@ function openDetalle(tipo, id, viajeId){
       <button onclick="closeModal('modal-detalle')" style="position:absolute;top:12px;right:12px;background:rgba(255,255,255,.2);border:none;color:white;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:.85rem;display:flex;align-items:center;justify-content:center">✕</button>
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:.5rem">
         <div style="font-size:2.2rem">${cat.icon}</div>
-        ${g.cadena?`<div style="font-size:1.3rem;font-weight:900;opacity:.95">${g.cadena}</div>`:g.vehiculo?`<div style="font-size:1.1rem;font-weight:900;opacity:.95">${g.vehiculo==='tiguan'?'VW Tiguan':'VW Golf'}</div>`:g.tipo_seguro?`<div style="font-size:1.2rem;font-weight:900;opacity:.95">🛡️ ${esc(g.tipo_seguro)}</div>`:''}
+        ${g.cadena?`<div style="font-size:1.3rem;font-weight:900;opacity:.95">${g.cadena}</div>`:g.vehiculo?`<div style="font-size:1.1rem;font-weight:900;opacity:.95">${g.vehiculo==='tiguan'?'VW Tiguan':'VW Golf'}</div>`:g.tipo_seguro?`<div style="font-size:1.2rem;font-weight:900;opacity:.95">🛡️ ${esc(g.tipo_seguro)}</div>`:g.tipo_transporte?`<div style="font-size:1.2rem;font-weight:900;opacity:.95">🚦 ${esc(g.tipo_transporte)}</div>`:''}
       </div>
       <div style="font-size:2rem;font-weight:900;letter-spacing:-.02em">${fmtEur(g.importe)}</div>
       <div style="font-size:.75rem;font-weight:700;opacity:.65;margin-top:3px;text-transform:uppercase;letter-spacing:.08em">${cat.label}</div>`;
@@ -3021,6 +3080,59 @@ function loadTipoSeguro(prefix,tipo){
   }
 }
 
+// ══ TIPO DE TRANSPORTE (Viajes) ══
+const TIPOS_TRANSPORTE=[
+  {id:'Peaje',label:'Peaje',icon:'🛣️'},
+  {id:'Parking',label:'Parking',icon:'🅿️'},
+  {id:'Taxi/Uber',label:'Taxi/Uber',icon:'🚕'},
+  {id:'Tren',label:'Tren',icon:'🚆'},
+  {id:'Avión',label:'Avión',icon:'✈️'},
+  {id:'Autobús',label:'Autobús',icon:'🚌'},
+  {id:'Alquiler coche',label:'Alquiler coche',icon:'🚗'},
+];
+let selTipoTransporte={gv:'Peaje'};
+
+function selectTipoTransporte(prefix,tipo,btn){
+  selTipoTransporte[prefix]=tipo;
+  document.querySelectorAll(`#${prefix}-transporte-tipo .gas-veh`).forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  const otroInput=document.getElementById(`${prefix}-transporte-otro`);
+  if(otroInput)otroInput.style.display=tipo==='otro'?'block':'none';
+}
+
+function getTipoTransporteData(prefix){
+  const tipo=selTipoTransporte[prefix]||'Peaje';
+  if(tipo==='otro'){
+    const val=document.getElementById(`${prefix}-transporte-otro`)?.value.trim();
+    return val||'Otro';
+  }
+  return tipo;
+}
+
+function resetTipoTransporte(prefix){
+  selTipoTransporte[prefix]='Peaje';
+  const btns=document.querySelectorAll(`#${prefix}-transporte-tipo .gas-veh`);
+  btns.forEach((b,i)=>b.classList.toggle('active',i===0));
+  const otroInput=document.getElementById(`${prefix}-transporte-otro`);
+  if(otroInput){otroInput.style.display='none';otroInput.value='';}
+}
+
+function loadTipoTransporte(prefix,tipo){
+  if(!tipo)return;
+  selTipoTransporte[prefix]=tipo;
+  document.querySelectorAll(`#${prefix}-transporte-tipo .gas-veh`).forEach(b=>{
+    const match=b.textContent.trim().includes(tipo)||tipo==='otro'&&b.textContent.includes('Otro');
+    b.classList.toggle('active',match);
+  });
+  const otroInput=document.getElementById(`${prefix}-transporte-otro`);
+  if(!TIPOS_TRANSPORTE.find(t=>t.id===tipo)){
+    if(otroInput){otroInput.style.display='block';otroInput.value=tipo;}
+    document.querySelectorAll(`#${prefix}-transporte-tipo .gas-veh`).forEach(b=>{
+      if(b.textContent.includes('Otro'))b.classList.add('active');
+    });
+  }
+}
+
 function getDateRangeFilter(filtro,startId,endId){
   const now=new Date(),today=todayISO();
   if(filtro==='semana'){const d=new Date(now);d.setDate(now.getDate()-((now.getDay()+6)%7));return{start:d.toISOString().split('T')[0],end:today};}
@@ -3103,7 +3215,7 @@ function renderVCatDetalleLista(){
   const sub=document.getElementById('vcatd-sub');
   if(sub)sub.textContent=`${esc(v.nombre||'Viaje')} · ${filtered.length} gasto${filtered.length!==1?'s':''} · ${fmtEur(total)}`;
 
-  // Desglose por cadena si es supermercado (igual que en Hogar)
+  // Desglose por cadena si es supermercado, o por tipo si es transporte (igual que en Hogar)
   let cadenaHtml='';
   if(currentVCatId==='supermercado'&&filtered.length){
     const byCadena={};
@@ -3120,6 +3232,26 @@ function renderVCatDetalleLista(){
           </div>
           <div style="background:#f1f5f9;border-radius:99px;height:6px;overflow:hidden">
             <div style="height:100%;background:#22c55e;border-radius:99px;width:${pct}%"></div>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }
+  if(currentVCatId==='transporte'&&filtered.length){
+    const byTipo={};
+    filtered.forEach(g=>{const k=g.tipo_transporte||'Sin especificar';byTipo[k]=(byTipo[k]||0)+parseFloat(g.importe||0);});
+    const sorted=Object.entries(byTipo).sort((a,b)=>b[1]-a[1]);
+    cadenaHtml=`<div style="margin-bottom:.85rem">
+      <div style="font-size:.72rem;font-weight:800;text-transform:uppercase;color:#64748b;letter-spacing:.06em;margin-bottom:.5rem">🚦 Por tipo</div>
+      ${sorted.map(([k,v])=>{
+        const pct=total>0?Math.round((v/total)*100):0;
+        return`<div style="margin-bottom:.4rem">
+          <div style="display:flex;justify-content:space-between;font-size:.8rem;margin-bottom:2px">
+            <span style="font-weight:700">${esc(k)}</span>
+            <span style="font-weight:900">${fmtEur(v)} <span style="color:#94a3b8;font-weight:400">${pct}%</span></span>
+          </div>
+          <div style="background:#f1f5f9;border-radius:99px;height:6px;overflow:hidden">
+            <div style="height:100%;background:#3b82f6;border-radius:99px;width:${pct}%"></div>
           </div>
         </div>`;
       }).join('')}
@@ -3298,6 +3430,15 @@ function renderVDetail(id){
   const spent=gastos.reduce((s,g)=>s+parseFloat(g.importe||0),0);
   const budget=parseFloat(v.presupuesto||0);
   const pct=budget>0?Math.min(100,(spent/budget)*100):0;
+  // Km recorridos en este viaje: máximo km_actual registrado durante el viaje (del mismo vehículo) − km inicial
+  let kmViaje=null;
+  if(v.km_inicial){
+    const kmEntries=gastos.filter(g=>g.km_actual&&(g.km_vehiculo||g.vehiculo)===v.km_inicial_vehiculo);
+    if(kmEntries.length){
+      const kmMax=Math.max(...kmEntries.map(g=>g.km_actual));
+      if(kmMax>v.km_inicial)kmViaje=kmMax-v.km_inicial;
+    }
+  }
   const isAdmin=currentRole==='admin';
   const theme=destTheme(v.nombre,v.destino);
   const imgUrl=v.foto_portada_url||getTripImgUrl(v.nombre,v.destino);
@@ -3326,6 +3467,7 @@ function renderVDetail(id){
         ${budget>0?`<span class="vchip">💶 ${fmtEur(budget)}</span>`:''}
         <span class="vchip">💳 ${fmtEur(spent)}</span>
         ${v.enlace_plan?`<a href="${esc(v.enlace_plan)}" target="_blank" rel="noopener" class="vchip" style="background:rgba(255,255,255,.3);text-decoration:none;font-weight:800;cursor:pointer">📋 Ver plan del viaje →</a>`:''}
+        ${kmViaje!==null?`<span class="vchip">🚗 ${kmViaje.toLocaleString()} km recorridos</span>`:''}
       </div>
       ${budget>0?`<div class="vp-row"><span>${Math.round(pct)}% del presupuesto</span><span class="vp-spent">${fmtEur(spent)} / ${fmtEur(budget)}</span></div>
       <div class="tbar-wrap"><div class="tbar${pct>=100?' over':''}" style="width:${pct}%"></div></div>`:''}
@@ -3345,7 +3487,7 @@ function renderVGastos(id){
     return`<div class="gasto-item" onclick="openDetalle('viaje','${gid}','${currentViaje}')" style="border-left:4px solid ${cat.color}">
       <div class="gcat-icon" style="background:${cat.color}20">${cat.icon}</div>
       <div class="gasto-body">
-        <div class="gasto-desc">${g.cadena&&!g.descripcion?`<span style="font-weight:900">${esc(g.cadena)}</span>`:esc(g.descripcion||cat.label)}${g.cadena&&g.descripcion?`<span style="font-size:.65rem;font-weight:800;padding:1px 7px;border-radius:10px;background:#dcfce7;color:#15803d;margin-left:4px">${esc(g.cadena)}</span>`:''}</div>
+        <div class="gasto-desc">${g.cadena&&!g.descripcion?`<span style="font-weight:900">${esc(g.cadena)}</span>`:g.tipo_transporte&&!g.descripcion?`<span style="font-weight:900">🚦 ${esc(g.tipo_transporte)}</span>`:esc(g.descripcion||cat.label)}${g.cadena&&g.descripcion?`<span style="font-size:.65rem;font-weight:800;padding:1px 7px;border-radius:10px;background:#dcfce7;color:#15803d;margin-left:4px">${esc(g.cadena)}</span>`:''}${g.tipo_transporte&&g.descripcion?`<span style="font-size:.65rem;font-weight:800;padding:1px 7px;border-radius:10px;background:#eff6ff;color:#1d4ed8;margin-left:4px">🚦 ${esc(g.tipo_transporte)}</span>`:''}</div>
         ${g.nota?`<div class="gasto-nota">💬 ${esc(g.nota)}</div>`:''}
         <div class="gasto-meta">${g.cadena&&!g.descripcion?'🛒 Supermercado':cat.label}<span style="color:#e2e8f0">·</span>Paga: ${quien}<span style="color:#e2e8f0">·</span>${fmtDate(g.fecha)}
           ${g.foto_url?`<span class="photo-badge" onclick="openLb('${g.foto_url}');event.stopPropagation()" style="cursor:pointer" title="Ver ticket">📸</span>`:''}
@@ -3416,6 +3558,12 @@ function renderLiquidacion(id){
 }
 
 // ══ VIAJE MODAL ══
+let selViajeKmVeh='tiguan';
+function selectViajeKmVeh(veh,btn){
+  selViajeKmVeh=veh;
+  document.querySelectorAll('#v-km-veh .gas-veh').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
 function openViajeModal(editId){
   if(currentRole!=='admin'){toast('⛔ Solo administradores');return;}
   editVId=editId||null;
@@ -3427,9 +3575,14 @@ function openViajeModal(editId){
     document.getElementById('v-inicio').value=v.fecha_inicio||'';document.getElementById('v-fin').value=v.fecha_fin||'';
     document.getElementById('v-presupuesto').value=v.presupuesto||'';
     document.getElementById('v-enlace-plan').value=v.enlace_plan||'';
+    document.getElementById('v-km-inicial').value=v.km_inicial||'';
+    selViajeKmVeh=v.km_inicial_vehiculo||'tiguan';
+    document.querySelectorAll('#v-km-veh .gas-veh').forEach((b,i)=>b.classList.toggle('active',(selViajeKmVeh==='tiguan'?0:1)===i));
     (v.participantes||[]).forEach(pid=>document.getElementById(`vp-${pid}`)?.classList.add('sel'));
   }else{
-    ['v-nombre','v-destino','v-inicio','v-fin','v-presupuesto','v-enlace-plan'].forEach(id=>document.getElementById(id).value='');
+    ['v-nombre','v-destino','v-inicio','v-fin','v-presupuesto','v-enlace-plan','v-km-inicial'].forEach(id=>document.getElementById(id).value='');
+    selViajeKmVeh='tiguan';
+    document.querySelectorAll('#v-km-veh .gas-veh').forEach((b,i)=>b.classList.toggle('active',i===0));
     FAMILY.forEach(f=>document.getElementById(`vp-${f.id}`)?.classList.add('sel'));
   }
   openModal('modal-viaje');
@@ -3441,7 +3594,9 @@ async function saveViaje(){
   if(!nombre){toast('⚠️ Escribe el nombre del viaje');return;}
   const pax=FAMILY.filter(f=>document.getElementById(`vp-${f.id}`)?.classList.contains('sel')).map(f=>f.id);
   if(!pax.length){toast('⚠️ Selecciona al menos un participante');return;}
-  const data={nombre,destino:document.getElementById('v-destino').value.trim(),fecha_inicio:document.getElementById('v-inicio').value,fecha_fin:document.getElementById('v-fin').value,presupuesto:parseFloat(document.getElementById('v-presupuesto').value)||0,enlace_plan:document.getElementById('v-enlace-plan').value.trim()||null,participantes:pax,timestamp:Date.now()};
+  const kmInicialRaw=parseFloat(document.getElementById('v-km-inicial').value||'');
+  const kmInicial=(!isNaN(kmInicialRaw)&&kmInicialRaw>0)?kmInicialRaw:null;
+  const data={nombre,destino:document.getElementById('v-destino').value.trim(),fecha_inicio:document.getElementById('v-inicio').value,fecha_fin:document.getElementById('v-fin').value,presupuesto:parseFloat(document.getElementById('v-presupuesto').value)||0,enlace_plan:document.getElementById('v-enlace-plan').value.trim()||null,...(kmInicial?{km_inicial:kmInicial,km_inicial_vehiculo:selViajeKmVeh}:{km_inicial:null,km_inicial_vehiculo:null}),participantes:pax,timestamp:Date.now()};
   if(editVId){await dbUpd(`gastos_viajes/${editVId}`,data);toast('✅ Viaje actualizado');}
   else{await dbPush('gastos_viajes',data);toast('✅ Viaje creado');}
   closeModal('modal-viaje');
@@ -3477,6 +3632,11 @@ function openGVModal(editId){
     if(g.foto_url)loadExistingPhoto('gv',g.foto_url,g.foto_path||null);
     if(g.foto_lugar_url)loadExistingPhoto('gvl',g.foto_lugar_url,g.foto_lugar_path||null);
     if(lugarSection)lugarSection.style.display=(selCatV==='comidas'||selCatV==='actividades'||selCatV==='alojamiento')?'':'none';
+    // Transporte section
+    const transSecV=document.getElementById('gv-transporte-section');
+    if(transSecV)transSecV.style.display=selCatV==='transporte'?'':'none';
+    resetTipoTransporte('gv');
+    if(g.tipo_transporte)loadTipoTransporte('gv',g.tipo_transporte);
     // Gas section
     const gasSecV=document.getElementById('gv-gasolina-section');
     if(gasSecV)gasSecV.style.display=selCatV==='gasolina'?'':'none';
@@ -3546,6 +3706,10 @@ function openGVModal(editId){
     if(kmElNew)kmElNew.value='';
     const kmDiffNew=document.getElementById('gv-km-diff');
     if(kmDiffNew)kmDiffNew.style.display='none';
+    // Reset transporte
+    const transSecNew=document.getElementById('gv-transporte-section');
+    if(transSecNew)transSecNew.style.display='none';
+    resetTipoTransporte('gv');
   }
   // Asegurar visibilidad de secciones según categoría actual
   const ubicFinal=document.getElementById('gv-ubicacion-section');
@@ -3556,6 +3720,8 @@ function openGVModal(editId){
   if(lugarFinal)lugarFinal.style.display=(selCatV==='comidas'||selCatV==='actividades'||selCatV==='alojamiento')?'':'none';
   const superFinal=document.getElementById('gv-super-section');
   if(superFinal)superFinal.style.display=selCatV==='supermercado'?'':'none';
+  const transFinal=document.getElementById('gv-transporte-section');
+  if(transFinal)transFinal.style.display=selCatV==='transporte'?'':'none';
   highlightCat('gv-cat',selCatV,'v');openModal('modal-gv');
 }
 
@@ -3580,7 +3746,7 @@ async function saveGastoViaje(){
     const ubicacion=document.getElementById('gv-ubicacion')?.value.trim()||null;
     const kmValRawV=selCatV==='gasolina'?parseFloat(document.getElementById('gv-km-actual')?.value||''):NaN;
     const kmValV=(!isNaN(kmValRawV)&&kmValRawV>0)?kmValRawV:null;
-    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,enlace:enlace||null,ubicacion:ubicacion||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatV==='gasolina'?getGasData('gv'):{}),...(selCatV==='supermercado'?{cadena:getCadenaData('gv')}:{}),...(kmValV?{km_actual:kmValV,km_vehiculo:selKmVeh}:{}),timestamp:Date.now()};
+    const data={importe,categoria:selCatV,descripcion:document.getElementById('gv-desc').value.trim(),nota:document.getElementById('gv-nota').value.trim()||null,enlace:enlace||null,ubicacion:ubicacion||null,fecha:document.getElementById('gv-fecha').value||todayISO(),quien_pago:document.getElementById('gv-quien').value,foto_url:foto_url||null,foto_path:foto_path||null,foto_lugar_url:foto_lugar_url||null,foto_lugar_path:foto_lugar_path||null,...(selCatV==='gasolina'?getGasData('gv'):{}),...(selCatV==='supermercado'?{cadena:getCadenaData('gv')}:{}),...(selCatV==='transporte'?{tipo_transporte:getTipoTransporteData('gv')}:{}),...(kmValV?{km_actual:kmValV,km_vehiculo:selKmVeh}:{}),timestamp:Date.now()};
     let finalGVId=editGVId;
     if(editGVId){await dbUpd(`gastos_viajes/${currentViaje}/gastos/${editGVId}`,data);toast('✅ Gasto actualizado');}
     else{finalGVId=await dbPush(`gastos_viajes/${currentViaje}/gastos`,data);toast('✅ Gasto añadido');}
@@ -3650,6 +3816,9 @@ function selectCat(cid,catId,type){
     }
     if(lugarSection)lugarSection.style.display=(catId==='comidas'||catId==='actividades'||catId==='alojamiento')?'':'none';
     if(catId!=='comidas'&&catId!=='actividades'&&catId!=='alojamiento')rmPhoto('gvl');
+    const transSecV=document.getElementById('gv-transporte-section');
+    if(transSecV)transSecV.style.display=catId==='transporte'?'':'none';
+    if(catId!=='transporte')resetTipoTransporte('gv');
     const gasSecV=document.getElementById('gv-gasolina-section');
     if(gasSecV)gasSecV.style.display=catId==='gasolina'?'':'none';
     if(catId!=='gasolina'){
