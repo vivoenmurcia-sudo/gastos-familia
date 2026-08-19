@@ -16,7 +16,7 @@
   import { initializeApp }                                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
   import { getDatabase, ref, set, get, onValue, update, push, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
   import { getStorage, ref as sRef, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
-  import { getAuth, signInWithPopup, signOut, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getAuth, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   const firebaseConfig = {
     apiKey:"AIzaSyDQppPeCxrIJryKbbzdnbfPnBNogOaHg7w",authDomain:"familia-gastos.firebaseapp.com",
     databaseURL:"https://familia-gastos-default-rtdb.europe-west1.firebasedatabase.app",
@@ -28,6 +28,8 @@
   window._getDownloadURL=getDownloadURL;window._deleteObject=deleteObject;
   window._ref=ref;window._set=set;window._get=get;window._push=push;window._remove=remove;window._onVal=onValue;window._upd=update;
   window._signIn=()=>signInWithPopup(auth,prov);
+  window._signInRedirect=()=>signInWithRedirect(auth,prov);
+  window._getRedirectResult=()=>getRedirectResult(auth);
   window._signOut=()=>signOut(auth);window._onAuth=cb=>onAuthStateChanged(auth,cb);
   document.dispatchEvent(new Event('db-ready'));
 </script>
@@ -1440,10 +1442,28 @@ document.getElementById('lightbox').addEventListener('wheel',e=>{
 },{passive:false});
 
 // ══ AUTH ══
-async function doSignIn(){document.getElementById('login-error').textContent='';try{await window._signIn();}catch(e){document.getElementById('login-error').textContent='Error al iniciar sesión.';}}
+async function doSignIn(){
+  const errEl=document.getElementById('login-error');
+  errEl.textContent='';
+  try{
+    await window._signIn(); // popup (método normal)
+  }catch(e){
+    // Si el popup falla (bloqueado, cookies de terceros, etc.), probamos con redirect automáticamente
+    console.warn('Popup falló, probando con redirect:',e?.code||e);
+    try{
+      await window._signInRedirect();
+    }catch(e2){
+      errEl.textContent='Error al iniciar sesión.';
+    }
+  }
+}
 function doSignOut(){window._signOut();}
 
 document.addEventListener('db-ready',()=>{
+  window._getRedirectResult().catch(e=>{
+    const el=document.getElementById('login-error');
+    if(el)el.textContent='Error al iniciar sesión: '+(e?.code||e?.message||'inténtalo de nuevo');
+  });
   window._onAuth(user=>{
     if(user){
       const email=user.email?.toLowerCase();
