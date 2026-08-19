@@ -467,6 +467,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         Continuar con Google
       </button>
       <div class="login-error" id="login-error"></div>
+      <button onclick="doSignInRedirect()" style="background:none;border:none;color:#94a3b8;font-size:.75rem;text-decoration:underline;margin-top:.6rem;cursor:pointer">¿No funciona? Prueba este otro método</button>
     </div>
     <div class="login-footer">🔒 Acceso restringido · Solo miembros de la familia</div>
   </div>
@@ -1448,14 +1449,18 @@ async function doSignIn(){
   try{
     await window._signIn(); // popup (método normal)
   }catch(e){
-    // Si el popup falla (bloqueado, cookies de terceros, etc.), probamos con redirect automáticamente
-    console.warn('Popup falló, probando con redirect:',e?.code||e);
+    console.warn('Popup falló, probando con redirect:',e?.code||e?.message||e);
     try{
       await window._signInRedirect();
     }catch(e2){
       errEl.textContent='Error al iniciar sesión.';
     }
   }
+}
+async function doSignInRedirect(){
+  document.getElementById('login-error').textContent='';
+  try{ await window._signInRedirect(); }
+  catch(e){ document.getElementById('login-error').textContent='Error al iniciar sesión.'; }
 }
 function doSignOut(){window._signOut();}
 
