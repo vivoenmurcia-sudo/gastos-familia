@@ -482,6 +482,7 @@ input:checked+.toggle-track:before{transform:translateX(18px)}
         <div class="user-avatar" id="top-av"></div>
         <span class="user-name" id="top-name"></span>
       </div>
+      <button class="signout-btn" onclick="descargarBackup()" style="background:#eff6ff;color:#1d4ed8;margin-right:6px" title="Descargar copia de seguridad de todos los datos">💾</button>
       <button class="signout-btn" onclick="doSignOut()">Salir</button>
     </div>
   </div>
@@ -3961,6 +3962,40 @@ function togglePersonDetail(id){const el=document.getElementById(id);if(el)el.st
 function stopProp(e){e.stopPropagation();}
 
 function toast(msg,ms=2400){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),ms);}
+
+// ══ COPIA DE SEGURIDAD ══
+// Descarga TODOS los datos de la app (gastos de hogar de todos los meses, viajes, presupuestos,
+// histórico de km, etc.) en un único archivo .json que se guarda en el propio móvil.
+async function descargarBackup(){
+  toast('⏳ Preparando copia de seguridad...');
+  try{
+    const [gastosHogar,gastosViajes,configGastos]=await Promise.all([
+      dbGet('gastos_hogar'),
+      dbGet('gastos_viajes'),
+      dbGet('config_gastos'),
+    ]);
+    const backup={
+      generado:new Date().toISOString(),
+      app:'Gastos Familia',
+      gastos_hogar:gastosHogar||{},
+      gastos_viajes:gastosViajes||{},
+      config_gastos:configGastos||{},
+    };
+    const blob=new Blob([JSON.stringify(backup,null,2)],{type:'application/json'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    a.download=`gastos-familia-backup-${todayISO()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('✅ Copia de seguridad descargada');
+  }catch(e){
+    console.error('Error al generar backup:',e);
+    toast('❌ No se pudo generar la copia de seguridad');
+  }
+}
 
 if('serviceWorker' in navigator){
   // Desregistrar SW anterior para evitar conflictos con el login
